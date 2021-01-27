@@ -1,0 +1,6 @@
+*.pyc
+.DS_Store
+/cache/
+/result/
+/config/settings.py
+sftp-config.json
