@@ -2,5 +2,5 @@
 .DS_Store
 /cache/
 /result/
-/config/settings.py
+/config/settings.conf
 sftp-config.json
