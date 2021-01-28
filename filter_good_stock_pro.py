@@ -41,6 +41,9 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 2. 增加新策略.
 3. 增加一个当天发现的缓存列表...避免再次打开丢失之前的.
 """
+"""
+近五日资金流入>0, top 100
+"""
 
 class StockNet():
     def __init__(self, token=None, is_limit=False, limit_num=100):
@@ -889,12 +892,11 @@ class StockNet():
 
             # > ----------------------------- 7. 套用规则 --------------------------
             self.rule_filter()
-            """
+
             if int(time.strftime('%H' , time.localtime())) >= 15:
                 print("[-] 交易已结束, 退出..")
                 self.close_signal = True
                 sys.exit()
-            """
 
 if __name__ == "__main__":
     if not os.path.exists("./config/settings.conf"):
@@ -905,26 +907,24 @@ if __name__ == "__main__":
         config = ConfigParser.ConfigParser()
         config.read(os.path.join('./config/', 'settings.conf'))
 
-        # 欧赛信令授权(用于及时发送微信通知)
+        # 欧赛信令(用于及时发送微信通知)
         token = config.get('base', 'token')
 
+        # 自选股列表(如配置将监控你的自选股资金交易情况)
+        zxg_list = eval(config.get('base', 'zxg_list'))
+
         # 限制单次获取数量
-        is_limit = False                                   # 是否限制单次获取数量
-        limit_num = 100                                    # 限制数量
+        is_limit = eval(config.get('base', 'is_limit'))  # 是否限制单次获取数量
+        limit_num = int(config.get('base', 'limit_num')) # 限制数量
 
         # 开始工作
         sn = StockNet(token, is_limit, limit_num)
 
         # 将当前自选加入监控列表
-        sn.rule_matched_list['rule1'].append("003008")
-        sn.rule_matched_list['rule1'].append("003006")
-        sn.rule_matched_list['rule1'].append("603179")
-        sn.rule_matched_list['rule1'].append("002241")
-        sn.rule_matched_list['rule1'].append("600570")
-        sn.rule_matched_list['rule1'].append("003026")
-        sn.rule_matched_list['rule1'].append("300026")
-        sn.rule_matched_list['rule1'].append("605111")
+        for code in zxg_list:
+            sn.rule_matched_list['rule1'].append(code)
 
+        # work
         sn.work()
 
 

@@ -1,3 +1,13 @@
 [base]
 # 扫码登录 https://www.ossec.cn/ | 欧赛信令模块获取
 token = xxxxxxxxxxxxxxxxxxxxxx
+
+# 是否限制单次获取数量(建议为False, 一般测试时候设置为True, 且调小限制数量.)
+is_limit = False
+
+# 限制数量
+limit_num = 100
+
+# 自选股列表
+#zxg_list = ["000001", "000002"]
+zxg_list = []
