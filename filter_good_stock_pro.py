@@ -764,20 +764,22 @@ class StockNet():
 
             # 筛选近五日涨跌幅 <= 1的
             for i in rule5_list:
-                if i['zdf_5days'] <= 1.5:
-                    code = i['code']
-                    stock = code
-                    name = self.yestoday_stock_dict[code]['name']
-                    zdf = self.yestoday_stock_dict[code]['zdf']
-                    jlr = self.yestoday_stock_dict[code]['jlr']
-                    content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
-                    if code not in self.rule_matched_list['rule5']:
-                        self.rule_matched_list['rule5'].append(code)
-                    self.write_result("rule5", content)
-                else:
+                try:
+                    if i['zdf_5days'] <= 1.5:
+                        code = i['code']
+                        stock = code
+                        name = self.yestoday_stock_dict[code]['name']
+                        zdf = self.yestoday_stock_dict[code]['zdf']
+                        jlr = self.yestoday_stock_dict[code]['jlr']
+                        content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                        if code not in self.rule_matched_list['rule5']:
+                            self.rule_matched_list['rule5'].append(code)
+                        self.write_result("rule5", content)
+                    else:
+                        continue
+                except Exception as e:
                     continue
         except Exception as e:
-            print e
             pass
 
         # 其他规则
