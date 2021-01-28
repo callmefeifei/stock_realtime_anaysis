@@ -60,6 +60,7 @@ class StockNet():
 
         # 上个交易日股票数据列表
         self.yestoday_stock_dict = {}
+        self.yestoday_stock_list = []
 
         # 最后交易日股票数据列表
         self.now_stock_dict = {}
@@ -96,6 +97,7 @@ class StockNet():
         self.rule_matched_list['rule2'] = []
         self.rule_matched_list['rule3'] = []
         self.rule_matched_list['rule4'] = []
+        self.rule_matched_list['rule5'] = []
 
         # 告警去重
         self.alarm_db = {}
@@ -308,6 +310,10 @@ class StockNet():
                 # rule4
                 rule4_list = self.rule_matched_list['rule4']
 
+                # rule5
+                rule5_list = self.rule_matched_list['rule5']
+
+
                 p = Pool(100)
                 threads = []
                 # rule1
@@ -325,6 +331,10 @@ class StockNet():
                 # rule4
                 for code in rule4_list:
                     threads.append(p.spawn(self.fetch_money_flow, code, "rule4"))
+
+                # rule5
+                for code in rule5_list:
+                    threads.append(p.spawn(self.fetch_money_flow, code, "rule5"))
 
                 gevent.joinall(threads)
 
@@ -623,16 +633,24 @@ class StockNet():
             # 获取昨天收盘数据开始
             self.ys_data_status = 1
             for u in all_url:
-                code = u[0]
-                url = u[1]
-                ts_code = u[2]
-                threads.append(p.spawn(self.yestody_data_func, code, url, ts_code))
+                try:
+                    code = u[0]
+                    url = u[1]
+                    ts_code = u[2]
+                    threads.append(p.spawn(self.yestody_data_func, code, url, ts_code))
+                except Exception as e:
+                    continue
 
             gevent.joinall(threads)
 
+            # 生成昨日股票数据列表
+            self.yestoday_stock_list = []
+            for i in self.yestoday_stock_dict:
+                self.yestoday_stock_list.append(self.yestoday_stock_dict[i])
+
         except Exception as e:
             print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
-            sys.exit()
+            return
 
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
@@ -796,6 +814,31 @@ class StockNet():
                         self.rule_matched_list['rule4'].append(code)
                     self.write_result("rule4", content)
 
+                # rule5: 近五日净流入大 & 近五日涨跌幅小
+                # 1. 近五日资金净流入 > 0 且 资金净流入排名靠前(top100?)
+                # 2. 近五日涨跌幅 <= 1
+                rule5_list = []
+                count = 0
+                # 首先筛选资金净流入>0 的 且近5天资金净流入排名top100的
+                for i in sorted(self.yestoday_stock_list, key=lambda x:x['jlr_5days'], reverse=False):
+                    if len(rule5_list) >= 100:
+                        break
+                    else:
+                        if i['jlr_5days'] > 0:
+                            rule5_list.append(i)
+                        else:
+                            continue
+
+                # 筛选近五日涨跌幅 <= 1的
+                for i in rule5_list:
+                    if i['zdf_5days'] <= 1.5:
+                        content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                        if code not in self.rule_matched_list['rule5']:
+                            self.rule_matched_list['rule5'].append(code)
+                        self.write_result("rule5", content)
+                    else:
+                        continue
+
             except Exception as e:
                 pass
 
@@ -883,7 +926,6 @@ class StockNet():
             self.ys_data_status = 2
 
             self.jx_data_count = 0
-
             self.ys_data_count = 0
             self.now_data_count = 0
 
