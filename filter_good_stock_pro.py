@@ -173,7 +173,7 @@ class StockNet():
     def fetch_now_changepercent(self, secid, code):
         try:
             url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f43,f170" % (secid, code)
-            con = requests.get(url).json()
+            con = requests.get(url, timeout=3).json()
             trade = con['data']['f43']
             now_changepercent = con['data']['f170']
         except:
@@ -193,7 +193,7 @@ class StockNet():
                 secid = 1
 
             url = "http://push2.eastmoney.com/api/qt/stock/fflow/kline/get?lmt=2&klt=1&secid=%s.%s&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63&ut=" % (secid, code)
-            data = requests.get(url).json()['data']
+            data = requests.get(url, timeout=5).json()['data']
             klines = data['klines']
             name = data['name']
             
@@ -201,7 +201,7 @@ class StockNet():
             #now_trade, now_changepercent = self.fetch_now_changepercent(secid, code)
             try:
                 url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f43,f170" % (secid, code)
-                con = requests.get(url).json()
+                con = requests.get(url, timeout=5).json()
                 now_trade = con['data']['f43']
                 now_changepercent = con['data']['f170']
             except:
