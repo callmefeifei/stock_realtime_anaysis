@@ -563,13 +563,13 @@ class StockNet():
                     if int(time.strftime('%M' , time.localtime())) > 30:
                         jlr = float(con['data']['klines'][-1].split(",")[0])/10000
                         zdf = float(con['data']['klines'][-1].split(",")[1])
-                        jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])/10000/10000
+                        jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])
                         zdf_5days = sum([float(i.split(",")[1]) for i in con['data']['klines'][1:]])
                         is_trade = True
                 else:
                     jlr = float(con['data']['klines'][-1].split(",")[0])/10000
                     zdf = float(con['data']['klines'][-1].split(",")[1])
-                    jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])/10000/10000
+                    jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])
                     zdf_5days = sum([float(i.split(",")[1]) for i in con['data']['klines'][1:]])
                     is_trade = True
 
@@ -578,7 +578,7 @@ class StockNet():
                 # 净流入
                 jlr = float(con['data']['klines'][-2].split(",")[0])/10000
                 zdf = float(con['data']['klines'][-2].split(",")[1])
-                jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][-6:][:5]])/10000/10000
+                jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][-6:][:5]])
                 zdf_5days = sum([float(i.split(",")[1]) for i in con['data']['klines'][-6:][:5]])
 
                 stock_info_list = [ i.split(",") for i in con['data']['klines'][:-1]]
@@ -746,6 +746,41 @@ class StockNet():
         # 昨日净流入且大涨
         # 今日净流出且大跌
 
+
+        # rule5: 近五日净流入大 & 近五日涨跌幅小
+        # 1. 近五日资金净流入 > 0 且 资金净流入排名靠前(top100?)
+        # 2. 近五日涨跌幅 <= 1
+        try:
+            rule5_list = []
+            # 首先筛选资金净流入>0 的 且近5天资金净流入排名top100的
+            for i in sorted(self.yestoday_stock_list, key=lambda x:x['jlr_5days'], reverse=False):
+                if len(rule5_list) >= 100:
+                    break
+                else:
+                    if i['jlr_5days'] > 0:
+                        rule5_list.append(i)
+                    else:
+                        continue
+
+            # 筛选近五日涨跌幅 <= 1的
+            for i in rule5_list:
+                if i['zdf_5days'] <= 1.5:
+                    code = i['code']
+                    stock = code
+                    name = self.yestoday_stock_dict[code]['name']
+                    zdf = self.yestoday_stock_dict[code]['zdf']
+                    jlr = self.yestoday_stock_dict[code]['jlr']
+                    content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    if code not in self.rule_matched_list['rule5']:
+                        self.rule_matched_list['rule5'].append(code)
+                    self.write_result("rule5", content)
+                else:
+                    continue
+        except Exception as e:
+            print e
+            pass
+
+        # 其他规则
         for stock in self.yestoday_stock_dict:
             try:
                 code = self.yestoday_stock_dict[stock]['code']
@@ -760,7 +795,7 @@ class StockNet():
                 if jlr > 1000 and zdf >= 3:
                     # 今日净流出 < -1000
                     if self.now_stock_dict[stock]['jlr'] <= -1000 and self.now_stock_dict[stock]['zdf'] <= -4:
-                        content = "[+][%s][rule1][%s][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                        content = "[+][%s][rule1][%s][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                         #print content
                         if code not in self.rule_matched_list['rule1']:
                             self.rule_matched_list['rule1'].append(code)
@@ -772,7 +807,7 @@ class StockNet():
                     if self.now_stock_dict[stock]['jlr'] <= 0 and self.now_stock_dict[stock]['zdf'] <= 0:
                         # 小于5日线，大于30日线
                         if self.yestoday_stock_dict[stock]['trade'] < self.yestoday_stock_dict[stock]['ma5'] and self.yestoday_stock_dict[stock]['trade'] > self.yestoday_stock_dict[stock]['ma30']:
-                            content = "[+][%s][rule2][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                            content = "[+][%s][rule2][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                             #print content
                             if code not in self.rule_matched_list['rule2']:
                                 self.rule_matched_list['rule2'].append(code)
@@ -788,7 +823,7 @@ class StockNet():
                     and self.yestoday_stock_dict[stock]['zdf_5days'] < 0 \
                     and self.yestoday_stock_dict[stock]['trade'] < self.yestoday_stock_dict[stock]['ma5'] and self.yestoday_stock_dict[stock]['trade'] > self.yestoday_stock_dict[stock]['ma30'] \
                     and 1==1:
-                    content = "[+][%s][rule3][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    content = "[+][%s][rule3][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     #print content
                     if code not in self.rule_matched_list['rule3']:
                         self.rule_matched_list['rule3'].append(code)
@@ -808,37 +843,11 @@ class StockNet():
                     and self.yestoday_stock_dict[stock]['ma30'] > self.yestoday_stock_dict[stock]['ma10'] \
                     and self.yestoday_stock_dict[stock]['ma10'] > self.yestoday_stock_dict[stock]['ma5'] \
                     and 1==1:
-                    content = "[+][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    content = "[+][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     #print content
                     if code not in self.rule_matched_list['rule4']:
                         self.rule_matched_list['rule4'].append(code)
                     self.write_result("rule4", content)
-
-                # rule5: 近五日净流入大 & 近五日涨跌幅小
-                # 1. 近五日资金净流入 > 0 且 资金净流入排名靠前(top100?)
-                # 2. 近五日涨跌幅 <= 1
-                rule5_list = []
-                count = 0
-                # 首先筛选资金净流入>0 的 且近5天资金净流入排名top100的
-                for i in sorted(self.yestoday_stock_list, key=lambda x:x['jlr_5days'], reverse=False):
-                    if len(rule5_list) >= 100:
-                        break
-                    else:
-                        if i['jlr_5days'] > 0:
-                            rule5_list.append(i)
-                        else:
-                            continue
-
-                # 筛选近五日涨跌幅 <= 1的
-                for i in rule5_list:
-                    if i['zdf_5days'] <= 1.5:
-                        content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
-                        if code not in self.rule_matched_list['rule5']:
-                            self.rule_matched_list['rule5'].append(code)
-                        self.write_result("rule5", content)
-                    else:
-                        continue
-
             except Exception as e:
                 pass
 
@@ -954,6 +963,7 @@ if __name__ == "__main__":
         token = config.get('base', 'token')
 
         # 自选股列表(如配置将监控你的自选股资金交易情况)
+        is_zxg_monitor = eval(config.get('base', 'is_zxg_monitor'))  # 是否监控自选股列表
         zxg_list = eval(config.get('base', 'zxg_list'))
 
         # 限制单次获取数量
@@ -964,8 +974,9 @@ if __name__ == "__main__":
         sn = StockNet(token, is_limit, limit_num)
 
         # 将当前自选加入监控列表
-        for code in zxg_list:
-            sn.rule_matched_list['rule1'].append(code)
+        if is_zxg_monitor:
+            for code in zxg_list:
+                sn.rule_matched_list['rule1'].append(code)
 
         # work
         sn.work()
