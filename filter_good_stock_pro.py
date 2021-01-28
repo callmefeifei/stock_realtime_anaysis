@@ -754,7 +754,7 @@ class StockNet():
             rule5_list = []
             # 首先筛选资金净流入>0 的 且近5天资金净流入排名top100的
             for i in sorted(self.yestoday_stock_list, key=lambda x:x['jlr_5days'], reverse=True):
-                if len(rule5_list) >= 100:
+                if len(rule5_list) >= 300:
                     break
                 else:
                     if i['jlr_5days'] > 0:
