@@ -749,7 +749,7 @@ class StockNet():
 
         # rule5: 近五日净流入大 & 近五日涨跌幅小
         # 1. 近五日资金净流入 > 0 且 资金净流入排名靠前(top100?)
-        # 2. 近五日涨跌幅 <= 1
+        # 2. 近五日涨跌幅 >= 0 and 近五日涨跌幅 <= 10
         try:
             rule5_list = []
             # 首先筛选资金净流入>0 的 且近5天资金净流入排名top100的
@@ -765,7 +765,7 @@ class StockNet():
             # 筛选近五日涨跌幅 <= 1的
             for i in rule5_list:
                 try:
-                    if i['zdf_5days'] <= 2:
+                    if i['zdf_5days'] > 0 and i['zdf_5days'] <= 10:
                         code = i['code']
                         stock = code
                         name = self.yestoday_stock_dict[code]['name']
