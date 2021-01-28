@@ -419,12 +419,12 @@ class StockNet():
 
                 if flag == 0: # 上个交易日
                     url = None
-                    # 非交易时间
+                    # 交易时间
                     if int(time.strftime('%H' , time.localtime())) >= 9 and int(time.strftime('%H' , time.localtime())) < 15:
                         if int(time.strftime('%M' , time.localtime())) > 30:
                             url = "http://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?cb=&lmt=5&klt=101&fields1=f2,f3,f7&fields2=f52,f63&ut=&secid=%s.%s" % (secid, code)
 
-                    # 交易时间
+                    # 非交易时间
                     if url is None:url = "http://push2his.eastmoney.com/api/qt/stock/fflow/daykline/get?cb=&lmt=6&klt=101&fields1=f2,f3,f7&fields2=f52,f63&ut=&secid=%s.%s" % (secid, code)
 
                 elif flag == 1: # 当前交易日:涨幅
@@ -563,13 +563,13 @@ class StockNet():
                     if int(time.strftime('%M' , time.localtime())) > 30:
                         jlr = float(con['data']['klines'][-1].split(",")[0])/10000
                         zdf = float(con['data']['klines'][-1].split(",")[1])
-                        jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])
+                        jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])/10000
                         zdf_5days = sum([float(i.split(",")[1]) for i in con['data']['klines'][1:]])
                         is_trade = True
                 else:
                     jlr = float(con['data']['klines'][-1].split(",")[0])/10000
                     zdf = float(con['data']['klines'][-1].split(",")[1])
-                    jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])
+                    jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][1:]])/10000
                     zdf_5days = sum([float(i.split(",")[1]) for i in con['data']['klines'][1:]])
                     is_trade = True
 
@@ -578,7 +578,7 @@ class StockNet():
                 # 净流入
                 jlr = float(con['data']['klines'][-2].split(",")[0])/10000
                 zdf = float(con['data']['klines'][-2].split(",")[1])
-                jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][-6:][:5]])
+                jlr_5days = sum([float(i.split(",")[0]) for i in con['data']['klines'][-6:][:5]])/10000
                 zdf_5days = sum([float(i.split(",")[1]) for i in con['data']['klines'][-6:][:5]])
 
                 stock_info_list = [ i.split(",") for i in con['data']['klines'][:-1]]
@@ -753,7 +753,7 @@ class StockNet():
         try:
             rule5_list = []
             # 首先筛选资金净流入>0 的 且近5天资金净流入排名top100的
-            for i in sorted(self.yestoday_stock_list, key=lambda x:x['jlr_5days'], reverse=False):
+            for i in sorted(self.yestoday_stock_list, key=lambda x:x['jlr_5days'], reverse=True):
                 if len(rule5_list) >= 100:
                     break
                 else:
@@ -777,9 +777,9 @@ class StockNet():
                         self.write_result("rule5", content)
                     else:
                         continue
-                except Exception as e:
+                except Exception as e1:
                     continue
-        except Exception as e:
+        except Exception as e2:
             pass
 
         # 其他规则
