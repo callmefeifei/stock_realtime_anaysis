@@ -883,6 +883,7 @@ class StockNet():
             self.ys_data_status = 2
 
             self.jx_data_count = 0
+
             self.ys_data_count = 0
             self.now_data_count = 0
 
