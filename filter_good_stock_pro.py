@@ -268,7 +268,7 @@ class StockNet():
 
             if is_matched:
                 content = "发现股票存在异动, 股票代码: %s[%s][%s][%s][%s万] | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs)
-                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%s万] 发现异动 | 股票代码: %s | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, code, rule_type, note, money_flow_bs)
+                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%s万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s | jlr_5days: %s | zdf_5days: %s"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
 
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
