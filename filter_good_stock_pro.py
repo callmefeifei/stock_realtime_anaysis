@@ -254,7 +254,7 @@ class StockNet():
 
             min1flow = (float(in_money_2) - float(in_money_1)) / 10000
 
-            print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%s万 近一分钟净流入:%s万 与上分钟比资金流入倍数:%s | jlr_5days: %s | zdf_5days: %s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
+            print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%.2f万 近一分钟净流入:%.2f万 与上分钟比资金流入倍数:%.2f | jlr_5days: %.2f | zdf_5days: %.2f" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
 
             # 资金流入倍数>2, 则认为异动. 资金流入倍数 -x, 跌
             is_matched = False
@@ -268,7 +268,7 @@ class StockNet():
 
             if is_matched:
                 content = "发现股票存在异动, 股票代码: %s[%s][%s][%s][%s万] | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs)
-                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%s万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s | jlr_5days: %s | zdf_5days: %s"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
+                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
 
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
@@ -851,6 +851,7 @@ class StockNet():
                         self.rule_matched_list['rule4'].append(code)
                     self.write_result("rule4", content)
             except Exception as e:
+                print e
                 pass
 
     # 获取所有股票均线数据

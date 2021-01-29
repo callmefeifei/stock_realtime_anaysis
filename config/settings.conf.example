@@ -10,4 +10,5 @@ limit_num = 100
 
 # 自选股列表
 #zxg_list = ["000001", "000002"]
+is_zxg_monitor = True
 zxg_list = []
