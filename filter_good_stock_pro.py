@@ -925,7 +925,12 @@ class StockNet():
         # > ----------------------------- > 获取当日收盘数据方法 --------------------------
         while True:
             if int(time.strftime('%H' , time.localtime())) >= 11 and int(time.strftime('%H' , time.localtime())) < 13:
-                if int(time.strftime('%M' , time.localtime())) >= 30:
+                if int(time.strftime('%H' , time.localtime())) == 11:
+                    if int(time.strftime('%M' , time.localtime())) >= 30:
+                        print("[-] 午市休息中..")
+                        time.sleep(5)
+                        continue
+                else:
                     print("[-] 午市休息中..")
                     time.sleep(5)
                     continue
