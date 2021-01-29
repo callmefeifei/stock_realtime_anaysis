@@ -115,7 +115,11 @@ class StockNet():
 
     # 结果保存
     def write_result(self, rule, content):
-        filename = time.strftime('%Y%m%d' , time.localtime())+"_"+rule+".txt"
+        if time.strftime('%H' , time.localtime()) < 12:
+            filename = time.strftime('%Y%m%d' , time.localtime())+"_"+rule+"_sw.txt"
+        else:
+            filename = time.strftime('%Y%m%d' , time.localtime())+"_"+rule+"_xw.txt"
+
         if not os.path.exists("./result/"):
             os.makedirs("./result/")
 
@@ -185,6 +189,41 @@ class StockNet():
             now_changepercent = 0
 
         return trade, now_changepercent
+
+    # 资金流入方法计算
+    def money_flow_calc(self, in_money_1, in_money_2):
+        # 都为净流出
+        if float(in_money_2) < 0 and float(in_money_1) < 0:
+            # 流入
+            if float(in_money_2) > float(in_money_1):
+                money_flow_bs = float(in_money_1) / float(in_money_2)
+            # 流出
+            else:
+                money_flow_bs = float(in_money_2) / float(in_money_1) / -1
+
+        # 都为净流入
+        if float(in_money_2) > 0 and float(in_money_1) > 0:
+            if float(in_money_2) > float(in_money_1):
+                money_flow_bs = float(in_money_2) / float(in_money_1)
+            # 流出
+            else:
+                money_flow_bs = float(in_money_1) / float(in_money_2) / -1
+
+        # 最近净流入, 上次净流出
+        if float(in_money_2) > 0 and float(in_money_1) < 0:
+            if abs(float(in_money_2)) > abs(float(in_money_1)):
+                money_flow_bs = float(in_money_2) / float(in_money_1) / -1
+            else:
+                money_flow_bs = float(in_money_1) / float(in_money_2) / -1
+
+        # 最近净流出, 上次净流入
+        if float(in_money_2) < 0 and float(in_money_1) > 0:
+            if abs(float(in_money_2)) < abs(float(in_money_1)):
+                money_flow_bs = float(in_money_1) / float(in_money_2)
+            else:
+                money_flow_bs = float(in_money_2) / float(in_money_1)
+
+        return money_flow_bs
 
     # 获取资金流量方法
     def fetch_money_flow(self, code, rule_type):
@@ -1041,37 +1080,51 @@ class StockNet():
             sys.exit()
 
         # 打印结果
+        all_stock_list = []
+        sort_code_dict = {}
         for code in sort_code_list.keys():
             if code in self.now_format_stock_dict.keys():
                 # 首个净流入计算
                 fst_jlr = float(sort_code_list[code][0].split("[")[7].split("]")[0].split(":")[1].strip('万'))
 
                 # 资金状态
+                single = 0
                 if float(self.now_format_stock_dict[code]['jlr']) < 0:
-                    if abs(float(self.now_format_stock_dict[code]['jlr'])) > fst_jlr:
+                    if fst_jlr > 0:
                         note = '流出状态'
+                        single = 0
                     else:
-                        note = '流入状态'
+                        if abs(float(self.now_format_stock_dict[code]['jlr'])) > fst_jlr:
+                            note = '流出状态'
+                            single = 0
+                        else:
+                            note = '流入状态'
+                            single = 1
                 else:
                     if float(self.now_format_stock_dict[code]['jlr']) > fst_jlr:
                         note = "流入状态"
+                        single = 1
                     else:
                         note = "流出状态"
+                        single = 0
 
-                if '流出' in note:
-                    print "【%s 首个净流入:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;34m%s\033[0m】" % (code, fst_jlr, self.now_format_stock_dict[code]['jlr'], note)
-                else:
-                    print "【%s 首个净流入:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;31m%s\033[0m】" % (code, fst_jlr, self.now_format_stock_dict[code]['jlr'], note)
+                now_money_flow_bs = self.money_flow_calc(fst_jlr, self.now_format_stock_dict[code]['jlr'])
+                if single == 1:
+                    if '流出' in note:
+                        msg = "【%s 首个净流入:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;34m%s\033[0m】" % (code, fst_jlr, self.now_format_stock_dict[code]['jlr'], note)
+                    else:
+                        msg = "【%s 首个净流入:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;31m%s\033[0m】, 资金流入增长倍数:%s " % (code, fst_jlr, self.now_format_stock_dict[code]['jlr'], note, now_money_flow_bs)
 
-                print "-"*150
+                    print msg
+                    print "-"*150
             else:
                 print code
 
             for stock in sort_code_list[code]:
-                print stock
+                if single == 1:
+                    print stock
             print "-"*150
-
-
+            
     def main(self):
         if not os.path.exists("./config/settings.conf"):
             print("[-] settings.conf is not found, pls check it!")
