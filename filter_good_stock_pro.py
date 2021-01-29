@@ -9,6 +9,7 @@ import json
 import requests
 import threading
 import ConfigParser
+from optparse import OptionParser
 
 # 协程
 import gevent
@@ -41,9 +42,6 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 2. 增加新策略.
 3. 增加一个当天发现的缓存列表...避免再次打开丢失之前的.
 """
-"""
-近五日资金流入>0, top 100
-"""
 
 class StockNet():
     def __init__(self, token=None, is_limit=False, limit_num=100):
@@ -64,6 +62,7 @@ class StockNet():
 
         # 最后交易日股票数据列表
         self.now_stock_dict = {}
+        self.now_format_stock_dict = {}
 
         # 线程池数量
         self.pool_num = 200
@@ -315,32 +314,47 @@ class StockNet():
                 # rule5
                 rule5_list = self.rule_matched_list['rule5']
 
-
                 p = Pool(100)
                 threads = []
                 # rule1
                 for code in rule1_list:
-                    threads.append(p.spawn(self.fetch_money_flow, code, "rule1"))
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule1"))
+                    except:
+                        pass
 
                 # rule2
                 for code in rule2_list:
-                    threads.append(p.spawn(self.fetch_money_flow, code, "rule2"))
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule2"))
+                    except:
+                        pass
 
                 # rule3
                 for code in rule2_list:
-                    threads.append(p.spawn(self.fetch_money_flow, code, "rule3"))
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule3"))
+                    except:
+                        pass
 
                 # rule4
                 for code in rule4_list:
-                    threads.append(p.spawn(self.fetch_money_flow, code, "rule4"))
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule4"))
+                    except:
+                        pass
 
                 # rule5
                 for code in rule5_list:
-                    threads.append(p.spawn(self.fetch_money_flow, code, "rule5"))
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule5"))
+                    except:
+                        pass
 
                 gevent.joinall(threads)
 
-                time.sleep(5)
+                # 15秒获取一次实时资金信息
+                time.sleep(15)
 
                 if self.close_signal:
                     break
@@ -654,6 +668,21 @@ class StockNet():
             print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
             return
 
+    def format_now_stock(self, code, url):
+        try:
+            # 净流入
+            con = requests.get(url, timeout=10).json()
+            jlr = float(con['data']['klines'][0])/10000
+
+            if code not in self.now_format_stock_dict.keys():
+                self.now_format_stock_dict[code] = {}
+                self.now_format_stock_dict[code]['jlr'] = jlr
+            else:
+                self.now_format_stock_dict[code]['jlr'] = jlr
+        except Exception as e:
+            #print(url, e)
+            pass
+
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
         try:
@@ -960,37 +989,134 @@ class StockNet():
                 self.close_signal = True
                 sys.exit()
 
+    def format_result(self, result_file, parser):
+        if not os.path.exists(result_file):
+            print("[-] File not found!")
+            parser.print_help()
+
+        with open(result_file, 'r') as f:
+            result = f.read()
+
+        sort_code_list = {}
+        for stock in result.split("\n"):
+            try:
+                code = stock.split("[")[3].strip("]")
+                if code in sort_code_list.keys():
+                    sort_code_list[code].append(stock)
+                else:
+                    sort_code_list[code] = []
+                    sort_code_list[code].append(stock)
+            except:
+                continue
+
+        # 获取实时净流入
+        url_list = []
+        for code in sort_code_list:
+            if code.startswith("300") or code.startswith("00"):
+                secid = 0
+            elif code.startswith("68"):
+                continue
+            else:
+                secid = 1
+
+            url = "http://push2.eastmoney.com/api/qt/stock/fflow/kline/get?lmt=1&klt=1&secid=%s.%s&fields1=f1,f2,f3,f7&fields2=f52&ut=&cb=&_=" % (secid, code)
+            url_list.append([code, url])
+
+        try:
+            p = Pool(300)
+            threads = []
+            for u in url_list:
+                try:
+                    code = u[0]
+                    url = u[1]
+                    threads.append(p.spawn(self.format_now_stock, code, url))
+                except Exception as e:
+                    print e
+                    pass
+
+            gevent.joinall(threads)
+
+        except Exception as e:
+            print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
+            sys.exit()
+
+        # 打印结果
+        for code in sort_code_list.keys():
+            if code in self.now_format_stock_dict.keys():
+                # 首个净流入计算
+                fst_jlr = float(sort_code_list[code][0].split("[")[7].split("]")[0].split(":")[1].strip('万'))
+
+                # 资金状态
+                if float(self.now_format_stock_dict[code]['jlr']) < 0:
+                    if abs(float(self.now_format_stock_dict[code]['jlr'])) > fst_jlr:
+                        note = '流出状态'
+                    else:
+                        note = '流入状态'
+                else:
+                    if float(self.now_format_stock_dict[code]['jlr']) > fst_jlr:
+                        note = "流入状态"
+                    else:
+                        note = "流出状态"
+
+                if '流出' in note:
+                    print "【%s 首个净流入:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;34m%s\033[0m】" % (code, fst_jlr, self.now_format_stock_dict[code]['jlr'], note)
+                else:
+                    print "【%s 首个净流入:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;31m%s\033[0m】" % (code, fst_jlr, self.now_format_stock_dict[code]['jlr'], note)
+
+                print "-"*150
+            else:
+                print code
+
+            for stock in sort_code_list[code]:
+                print stock
+            print "-"*150
+
+
+    def main(self):
+        if not os.path.exists("./config/settings.conf"):
+            print("[-] settings.conf is not found, pls check it!")
+            sys.exit()
+        else:
+            parser = OptionParser()
+
+            parser.add_option("--format_result", dest="format_result", default=False, help=u"查看结果, --format_result result/20210129_money_flow.txt")
+
+            (options, args) = parser.parse_args()
+
+            if args:
+                parser.print_help()
+            else:
+                if options.format_result:
+                    result_file = options.format_result
+                    self.format_result(result_file, parser)
+                else:
+                    self.work()
+
 if __name__ == "__main__":
-    if not os.path.exists("./config/settings.conf"):
-        print("[-] settings.conf is not found, pls check it!")
-        sys.exit()
-    else:
-        # 配置文件加载
-        config = ConfigParser.ConfigParser()
-        config.read(os.path.join('./config/', 'settings.conf'))
 
-        # 欧赛信令(用于及时发送微信通知)
-        token = config.get('base', 'token')
+    # 配置文件加载
+    config = ConfigParser.ConfigParser()
+    config.read(os.path.join('./config/', 'settings.conf'))
 
-        # 自选股列表(如配置将监控你的自选股资金交易情况)
-        is_zxg_monitor = eval(config.get('base', 'is_zxg_monitor'))  # 是否监控自选股列表
-        zxg_list = eval(config.get('base', 'zxg_list'))
+    # 欧赛信令(用于及时发送微信通知)
+    token = config.get('base', 'token')
 
-        # 限制单次获取数量
-        is_limit = eval(config.get('base', 'is_limit'))  # 是否限制单次获取数量
-        limit_num = int(config.get('base', 'limit_num')) # 限制数量
+    # 自选股列表(如配置将监控你的自选股资金交易情况)
+    is_zxg_monitor = eval(config.get('base', 'is_zxg_monitor'))  # 是否监控自选股列表
+    zxg_list = eval(config.get('base', 'zxg_list'))
 
-        # 开始工作
-        sn = StockNet(token, is_limit, limit_num)
+    # 限制单次获取数量
+    is_limit = eval(config.get('base', 'is_limit'))  # 是否限制单次获取数量
+    limit_num = int(config.get('base', 'limit_num')) # 限制数量
 
-        # 将当前自选加入监控列表
-        if is_zxg_monitor:
-            for code in zxg_list:
-                sn.rule_matched_list['rule1'].append(code)
+    # 开始工作
+    sn = StockNet(token, is_limit, limit_num)
+    sn.main()
 
-        # work
-        sn.work()
-
+    # 将当前自选加入监控列表
+    if is_zxg_monitor:
+        for code in zxg_list:
+            sn.rule_matched_list['rule1'].append(code)
 
 
 
