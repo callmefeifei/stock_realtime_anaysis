@@ -930,6 +930,8 @@ class StockNet():
                         print("[-] 午市休息中..")
                         time.sleep(5)
                         continue
+                elif int(time.strftime('%H' , time.localtime())) == 12 and int(time.strftime('%M' , time.localtime())) >= 55:
+                    pass
                 else:
                     print("[-] 午市休息中..")
                     time.sleep(5)
