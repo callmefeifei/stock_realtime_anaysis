@@ -254,7 +254,7 @@ class StockNet():
 
             min1flow = (float(in_money_2) - float(in_money_1)) / 10000
 
-            print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%s万 近一分钟净流入:%s万 与上分钟比资金流入倍数:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs)
+            print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%s万 近一分钟净流入:%s万 与上分钟比资金流入倍数:%s | jlr_5days: %s | zdf_5days: %s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
 
             # 资金流入倍数>2, 则认为异动. 资金流入倍数 -x, 跌
             is_matched = False
