@@ -16,6 +16,9 @@ import gevent
 from gevent import monkey; monkey.patch_all()
 from gevent.pool import Pool
 
+# 请求重试
+from requests.adapters import HTTPAdapter
+
 reload(sys)
 sys.setdefaultencoding("utf-8")
 
@@ -43,6 +46,16 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 
 class StockNet():
     def __init__(self, token=None, is_limit=False, limit_num=100):
+        # 重试请求方法
+        self.headers = {
+            "Referer":"http://data.eastmoney.com/",
+            "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36"
+        }
+        self.s = requests.Session()
+        self.s.mount('http://', HTTPAdapter(max_retries=3))
+        self.s.mount('https://', HTTPAdapter(max_retries=3))
+        self.s.headers.update(self.headers)
+
         # 告警token
         self.wx_token = token
 
@@ -109,7 +122,7 @@ class StockNet():
             s_title = "股票异动提醒"
             api_url = 'https://api.ossec.cn/v1/send?token=%s' % self.wx_token
             api_url += '&topic=%s&message=%s' % (s_title, s_content)
-            response  = requests.get(api_url, timeout=60)
+            response  = self.s.get(api_url, timeout=60)
         except:
             pass
 
@@ -181,7 +194,7 @@ class StockNet():
     def fetch_now_changepercent(self, secid, code):
         try:
             url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f43,f170" % (secid, code)
-            con = requests.get(url, timeout=3).json()
+            con = self.s.get(url, timeout=3).json()
             trade = con['data']['f43']
             now_changepercent = con['data']['f170']
         except:
@@ -236,7 +249,7 @@ class StockNet():
                 secid = 1
 
             url = "http://push2.eastmoney.com/api/qt/stock/fflow/kline/get?lmt=2&klt=1&secid=%s.%s&fields1=f1,f2,f3,f7&fields2=f51,f52,f53,f54,f55,f56,f57,f58,f59,f60,f61,f62,f63&ut=" % (secid, code)
-            data = requests.get(url, timeout=5).json()['data']
+            data = self.s.get(url, timeout=5).json()['data']
             klines = data['klines']
             name = data['name']
 
@@ -244,7 +257,7 @@ class StockNet():
             #now_trade, now_changepercent = self.fetch_now_changepercent(secid, code)
             try:
                 url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f43,f170" % (secid, code)
-                con = requests.get(url, timeout=5).json()
+                con = self.s.get(url, timeout=5).json()
                 now_trade = con['data']['f43']
                 now_changepercent = con['data']['f170']
             except:
@@ -454,7 +467,7 @@ class StockNet():
         else:
             stock_plat = u'其他'
             try:
-                res = requests.get("https://suggest3.sinajs.cn/suggest/type=11,12,13,14,15,72&key=%s" % code , timeout=3).text.split('"')[1]
+                res = self.s.get("https://suggest3.sinajs.cn/suggest/type=11,12,13,14,15,72&key=%s" % code , timeout=3).text.split('"')[1]
                 if res:
                     stock_prefix = res.split(',')[0][:2]
                 else:
@@ -518,7 +531,7 @@ class StockNet():
 
         # 通过API获取交易时间信息
         try:
-            all_trade_time = [i[0] for i in requests.get("http://api.finance.ifeng.com/akdaily/?code=sz002307&type=last", timeout=3).json()['record']]
+            all_trade_time = [i[0] for i in self.s.get("http://api.finance.ifeng.com/akdaily/?code=sz002307&type=last", timeout=3).json()['record']]
         except:
             all_trade_time = []
 
@@ -541,7 +554,7 @@ class StockNet():
     # 获取全量股票代码以及前缀
     def get_all_code(self):
         try:
-            stock_code_list = [ i['f12'] for i in requests.get("http://21.push2.eastmoney.com/api/qt/clist/get?cb=&pn=1&pz=10000&po=1&np=1&ut=&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f14", timeout=3).json()['data']['diff'] ]
+            stock_code_list = [ i['f12'] for i in self.s.get("http://21.push2.eastmoney.com/api/qt/clist/get?cb=&pn=1&pz=10000&po=1&np=1&ut=&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:2,m:1+t:23&fields=f2,f3,f12,f14", timeout=3).json()['data']['diff'] ]
         except:
             stock_code_list = []
 
@@ -583,7 +596,7 @@ class StockNet():
         # 获取当前均线价格
         try:
             ma_api = "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=%s&scale=240&datalen=1" % (ts_code)
-            con = requests.get(url=ma_api, timeout=10).text
+            con = self.s.get(url=ma_api, timeout=10).text
             con = json.loads(con.split("[")[1][:-3])
             ma5 = float(con['ma_price5'])
             ma10 = float(con['ma_price10'])
@@ -599,7 +612,7 @@ class StockNet():
         # 获取当前均线价格
         try:
             ma_api = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=%s&scale=240&datalen=1" % (ts_code)
-            con = requests.get(url=ma_api, timeout=10).json()[0]
+            con = self.s.get(url=ma_api, timeout=10).json()[0]
             ma5 = float(con['ma_price5'])
             ma10 = float(con['ma_price10'])
             ma30 = float(con['ma_price30'])
@@ -615,7 +628,10 @@ class StockNet():
 
         # 获取昨日资金详情
         try:
-            con = requests.get(url, timeout=10).json()
+            con = self.s.get(url, timeout=10).json()
+
+            if len(con) <= 1:
+                print code, con
 
             name = con['data']['name']
 
@@ -716,9 +732,10 @@ class StockNet():
             return
 
     def format_now_stock(self, code, url, url2):
+        """
         try:
             # 净流入
-            con = requests.get(url, timeout=10).json()
+            con = self.s.get(url, timeout=10).json()
             jlr = float(con['data']['klines'][0])/10000
 
             if code not in self.now_format_stock_dict.keys():
@@ -729,12 +746,13 @@ class StockNet():
         except Exception as e:
             #print(url, e)
             pass
-
+        """
 
         # 主力成本、排名、得分、控盘形态、最新价格、最新涨跌幅
         try:
             # 净流入
-            con = requests.get(url2, timeout=10).json()
+            con = self.s.get(url2, timeout=10).json()
+            self.now_format_stock_dict[code]['jlr'] = con[0]['ZLJLR'] / 10000
             name = con[0]['Name']
             zdf = con[0]['ChangePercent']
             trade = con[0]['New']
@@ -790,13 +808,13 @@ class StockNet():
                 secid = 1
 
             """
-            zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
-            con = requests.get(zdf_url, timeout=10).json()
+            zdf_url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f170&ut=&_=1610344699504" % (secid, code)
+            con = self.s.get(zdf_url, timeout=10).json()
             zdf = con['data']['f170']
             """
 
-            zdf_url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f170&ut=&_=1610344699504" % (secid, code)
-            con = requests.get(zdf_url, timeout=10).json()
+            zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
+            con = self.s.get(zdf_url, timeout=10).json()
             zdf = con[0]['ChangePercent']
             score = con[0]['TotalScore'] # 得分
             rank = con[0]['Ranking']     # 排名
@@ -804,9 +822,8 @@ class StockNet():
             kpzt = con[0]['JGCYDType']       # 控盘状态
             zlcb = con[0]['ZLCB']            # 主力成本
 
-
             # 净流入
-            con = requests.get(url, timeout=10).json()
+            con = self.s.get(url, timeout=10).json()
             name = con['data']['name']
             jlr = float(con['data']['klines'][0])/10000
             if code not in self.now_stock_dict.keys():
@@ -868,7 +885,7 @@ class StockNet():
     # 均线数据获取赋值
     def jx_data_func(self, url, code):
         try:
-            jx_data = requests.get(url, timeout=5).json()['record']
+            jx_data = self.s.get(url, timeout=5).json()['record']
         except Exception as e:
             jx_data = []
 
@@ -904,15 +921,25 @@ class StockNet():
 
         try:
             rule6_list = []
-            # 首先按排名排序
-            for i in sorted(self.now_stock_list, key=lambda x:x['score'], reverse=True):
-                if len(rule6_list) >= 200:
+
+            # 首先按排名排序, 获取top50
+            for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
+                if len(rule6_list) >= 50:
                     break
                 else:
-                    if i['jlr_5days'] > 0:
-                        rule6_list.append(i)
-                    else:
-                        continue
+                    rule6_list.append(i)
+
+            # 然后按净流入, 从大到小排序, 获取前25
+            for i in sorted(rule6_list, key=lambda x:x['jlr'], reverse=True)[:20]:
+                code = i['code']
+                stock = code
+                name = i['name']
+                zdf = i['zdf']
+                jlr = i['jlr']
+                content = "[+][%s][rule6][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                if code not in self.rule_matched_list['rule6']:
+                    self.rule_matched_list['rule6'].append(code)
+                self.write_result("rule6", content)
 
             """
             # 筛选近五日涨跌幅 <= 1的
@@ -935,7 +962,6 @@ class StockNet():
             """
         except Exception as e2:
             pass
-
 
         # rule5: 近五日净流入大 & 近五日涨跌幅小
         # 1. 近五日资金净流入 > 0 且 资金净流入排名靠前(top100?)
@@ -1042,8 +1068,13 @@ class StockNet():
 
                     self.write_result("rule4", content)
             except Exception as e:
-                print("[-] 获取股票均线数据失败!! errcode:100207, errmsg:%s" % e)
-                pass
+                try:
+                    # 如果是int，则不告警
+                    int(e)
+                except:
+                    pass
+
+                    print("[-] 规则过滤出错!! errcode:100207, errmsg:%s" % e)
 
     # 获取所有股票均线数据
     def get_jx_data(self):
