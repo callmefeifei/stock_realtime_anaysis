@@ -822,7 +822,7 @@ class StockNet():
             focus = con[0]['Focus']          # 关注度
             kpzt = con[0]['JGCYDType']       # 控盘状态
             zlcb = con[0]['ZLCB']            # 主力成本
-            jlr = = con[0]['ZLJLR'] / 10000
+            jlr = con[0]['ZLJLR'] / 10000    # 净流入
 
             if code not in self.now_stock_dict.keys():
                 self.now_stock_dict[code] = {}
@@ -861,7 +861,7 @@ class StockNet():
                 focus = con[0]['Focus']          # 关注度
                 kpzt = con[0]['JGCYDType']       # 控盘状态
                 zlcb = con[0]['ZLCB']            # 主力成本
-                jlr = = con[0]['ZLJLR'] / 10000  # 净流入
+                jlr = con[0]['ZLJLR'] / 10000    # 净流入
 
                 if code not in self.now_stock_dict.keys():
                     self.now_stock_dict[code] = {}
