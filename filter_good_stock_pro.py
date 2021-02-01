@@ -39,8 +39,6 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 """
 :TODO
 1. 增加异动股票涨停监测
-2. 增加新策略.
-3. 增加一个当天发现的缓存列表...避免再次打开丢失之前的.
 """
 
 class StockNet():
@@ -1151,6 +1149,7 @@ class StockNet():
                         now_trade = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['trade']
                     else:
                         now_trade = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['trade']
+
                     if '流出' in note:
                         msg = "【[%s][%s%%][%s][%s] 得分:%s 排名:%s 主力成本:%s 当前净流入:%s 自首次监测异动截止目前，资金呈 \033[1;34m%s\033[0m】" % ( 
                                                                                                                 code, \
