@@ -850,8 +850,47 @@ class StockNet():
                 self.now_stock_dict[code]['zlcb'] = zlcb
 
         except Exception as e:
-            #print(url, e)
-            pass
+            # 重试
+            try:
+                time.sleep(5)
+
+                zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
+                con = self.s.get(zdf_url, timeout=10).json()
+                zdf = con[0]['ChangePercent']
+                score = con[0]['TotalScore'] # 得分
+                rank = con[0]['Ranking']     # 排名
+                focus = con[0]['Focus']      # 关注度
+                kpzt = con[0]['JGCYDType']       # 控盘状态
+                zlcb = con[0]['ZLCB']            # 主力成本
+
+                # 净流入
+                con = self.s.get(url, timeout=10).json()
+                name = con['data']['name']
+                jlr = float(con['data']['klines'][0])/10000
+                if code not in self.now_stock_dict.keys():
+                    self.now_stock_dict[code] = {}
+                    self.now_stock_dict[code]['code'] = code
+                    self.now_stock_dict[code]['name'] = name
+                    self.now_stock_dict[code]['jlr'] = jlr
+                    self.now_stock_dict[code]['zdf'] = zdf
+                    self.now_stock_dict[code]['score'] = score
+                    self.now_stock_dict[code]['rank'] = rank
+                    self.now_stock_dict[code]['focus'] = focus
+                    self.now_stock_dict[code]['kpzt'] = kpzt
+                    self.now_stock_dict[code]['zlcb'] = zlcb
+
+                else:
+                    self.now_stock_dict[code]['code'] = code
+                    self.now_stock_dict[code]['name'] = name
+                    self.now_stock_dict[code]['jlr'] = jlr
+                    self.now_stock_dict[code]['zdf'] = zdf
+                    self.now_stock_dict[code]['score'] = score
+                    self.now_stock_dict[code]['rank'] = rank
+                    self.now_stock_dict[code]['focus'] = focus
+                    self.now_stock_dict[code]['kpzt'] = kpzt
+                    self.now_stock_dict[code]['zlcb'] = zlcb
+            except:
+                pass
 
         self.now_data_count += 1
 
@@ -860,7 +899,7 @@ class StockNet():
         try:
             all_url = self.get_all_url(flag=2)
 
-            p = Pool(300)
+            p = Pool(150)
             threads = []
             # 获取当日收盘数据开始
             self.now_data_status = 1
@@ -934,8 +973,8 @@ class StockNet():
                 code = i['code']
                 stock = code
                 name = i['name']
-                zdf = i['zdf']
-                jlr = i['jlr']
+                zdf = self.yestoday_stock_dict[code]['zdf']
+                jlr = self.yestoday_stock_dict[code]['jlr']
                 content = "[+][%s][rule6][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                 if code not in self.rule_matched_list['rule6']:
                     self.rule_matched_list['rule6'].append(code)
@@ -1009,7 +1048,7 @@ class StockNet():
                 # 昨日净流入>1000w, 且涨跌幅>3
                 #print "[-][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s" % (code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'])
 
-                # rule1:昨日净流出，今日净流出
+                # rule1:昨日净流入，今日净流出
                 if jlr > 1000 and zdf >= 3:
                     # 今日净流出 < -1000
                     if self.now_stock_dict[stock]['jlr'] <= -1000 and self.now_stock_dict[stock]['zdf'] <= -4:
@@ -1048,7 +1087,6 @@ class StockNet():
 
                     self.write_result("rule3", content)
 
-                #import pdb;pdb.set_trace()
                 # rule4:刚突破ma5->ma10<ma20
                 # 1. 当前涨跌幅>0
                 # 2. 昨日收盘价>ma5 and 昨日收盘价<ma10
@@ -1070,10 +1108,9 @@ class StockNet():
             except Exception as e:
                 try:
                     # 如果是int，则不告警
-                    int(e)
+                    code = int(str(e).strip("'"))
                 except:
                     pass
-
                     print("[-] 规则过滤出错!! errcode:100207, errmsg:%s" % e)
 
     # 获取所有股票均线数据
@@ -1174,6 +1211,8 @@ class StockNet():
 
             # > ----------------------------- 7. 套用规则 --------------------------
             self.rule_filter()
+
+            print "[*] 本次分析完毕, 昨日数据 与 今日数据比相差 %s 个." % (len(self.yestoday_stock_dict.keys()) - len(self.now_stock_dict.keys()))
 
             if int(time.strftime('%H' , time.localtime())) >= 15:
                 print("[-] 交易已结束, 退出..")
