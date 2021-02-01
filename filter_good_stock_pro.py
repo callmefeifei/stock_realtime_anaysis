@@ -308,13 +308,13 @@ class StockNet():
             if code in self.yestoday_stock_dict.keys():
                 print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%.2f万 近一分钟净流入:%.2f万 与上分钟比资金流入倍数:%.2f | jlr_5days: %.2f | zdf_5days: %.2f" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
 
-            # 资金流入倍数>2, 则认为异动. 资金流入倍数 -x, 跌
+            # 资金流入倍数>1.5, 则认为异动. 资金流入倍数 -x, 跌
             is_matched = False
-            if money_flow_bs <= -2:
+            if money_flow_bs <= -1.5:
                 note = "出现大幅流出."
                 is_matched = True
 
-            elif money_flow_bs >= 2:
+            elif money_flow_bs >= 1.5:
                 note = "出现大幅流入."
                 is_matched = True
 
