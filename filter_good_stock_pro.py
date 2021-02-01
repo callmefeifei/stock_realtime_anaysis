@@ -815,17 +815,15 @@ class StockNet():
 
             zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
             con = self.s.get(zdf_url, timeout=10).json()
-            zdf = con[0]['ChangePercent']
-            score = con[0]['TotalScore'] # 得分
-            rank = con[0]['Ranking']     # 排名
-            focus = con[0]['Focus']      # 关注度
+            name = con[0]['Name']            # 股票名称
+            zdf = con[0]['ChangePercent']    # 涨跌幅
+            score = con[0]['TotalScore']     # 得分
+            rank = con[0]['Ranking']         # 排名
+            focus = con[0]['Focus']          # 关注度
             kpzt = con[0]['JGCYDType']       # 控盘状态
             zlcb = con[0]['ZLCB']            # 主力成本
+            jlr = = con[0]['ZLJLR'] / 10000
 
-            # 净流入
-            con = self.s.get(url, timeout=10).json()
-            name = con['data']['name']
-            jlr = float(con['data']['klines'][0])/10000
             if code not in self.now_stock_dict.keys():
                 self.now_stock_dict[code] = {}
                 self.now_stock_dict[code]['code'] = code
@@ -856,17 +854,15 @@ class StockNet():
 
                 zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
                 con = self.s.get(zdf_url, timeout=10).json()
-                zdf = con[0]['ChangePercent']
-                score = con[0]['TotalScore'] # 得分
-                rank = con[0]['Ranking']     # 排名
-                focus = con[0]['Focus']      # 关注度
+                name = con[0]['Name']            # 股票名称
+                zdf = con[0]['ChangePercent']    # 涨跌幅
+                score = con[0]['TotalScore']     # 得分
+                rank = con[0]['Ranking']         # 排名
+                focus = con[0]['Focus']          # 关注度
                 kpzt = con[0]['JGCYDType']       # 控盘状态
                 zlcb = con[0]['ZLCB']            # 主力成本
+                jlr = = con[0]['ZLJLR'] / 10000  # 净流入
 
-                # 净流入
-                con = self.s.get(url, timeout=10).json()
-                name = con['data']['name']
-                jlr = float(con['data']['klines'][0])/10000
                 if code not in self.now_stock_dict.keys():
                     self.now_stock_dict[code] = {}
                     self.now_stock_dict[code]['code'] = code
@@ -911,7 +907,7 @@ class StockNet():
 
             gevent.joinall(threads)
 
-            # 生成昨日股票数据列表
+            # 生成今日股票数据列表
             self.now_stock_list = []
             for i in self.now_stock_dict:
                 self.now_stock_list.append(self.now_stock_dict[i])
