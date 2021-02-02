@@ -59,6 +59,9 @@ class StockNet():
         # 告警token
         self.wx_token = token
 
+        # 是否发送微信提醒
+        self.is_notify = is_notify
+
         # 是否限制数量
         self.is_limit = is_limit
 
@@ -119,10 +122,11 @@ class StockNet():
 
     def notify(self, s_title, s_content):
         try:
-            s_title = "股票异动提醒"
-            api_url = 'https://api.ossec.cn/v1/send?token=%s' % self.wx_token
-            api_url += '&topic=%s&message=%s' % (s_title, s_content)
-            response  = self.s.get(api_url, timeout=60)
+            if self.is_notify:
+                s_title = "股票异动提醒"
+                api_url = 'https://api.ossec.cn/v1/send?token=%s' % self.wx_token
+                api_url += '&topic=%s&message=%s' % (s_title, s_content)
+                response  = self.s.get(api_url, timeout=60)
         except:
             pass
 
@@ -136,7 +140,13 @@ class StockNet():
         if not os.path.exists("./result/"):
             os.makedirs("./result/")
 
-        with open("./result/"+filename, "a+") as f:
+        if not os.path.exists("./result/%s" % time.strftime('%Y-%m-%d' , time.localtime())):
+            os.makedirs("./result/%s" % time.strftime('%Y-%m-%d' , time.localtime()))
+
+        # 文件路径
+        filepath = "./result/%s/%s" % (time.strftime('%Y-%m-%d' , time.localtime()), filename)
+
+        with open(filepath, "a+") as f:
             f.write(content+"\n")
 
     # 获取数据进度监控
@@ -715,7 +725,7 @@ class StockNet():
             return
 
     def format_now_stock(self, code, url, url2):
-        """
+
         try:
             # 净流入
             con = self.s.get(url, timeout=10).json()
@@ -729,19 +739,11 @@ class StockNet():
         except Exception as e:
             #print(url, e)
             pass
-        """
 
         # 主力成本、排名、得分、控盘形态、最新价格、最新涨跌幅
         try:
             # 净流入
             con = self.s.get(url2, timeout=10).json()
-            jlr = con[0]['ZLJLR'] / 10000
-
-            if code not in self.now_format_stock_dict.keys():
-                self.now_format_stock_dict[code] = {}
-                self.now_format_stock_dict[code]['jlr'] = jlr
-            else:
-                self.now_format_stock_dict[code]['jlr'] = jlr
 
             name = con[0]['Name']
             zdf = con[0]['ChangePercent']
@@ -1409,7 +1411,8 @@ class StockNet():
         if self.format_loop:
             while True:
                 self.format_func(result_file)
-                time.sleep(5)
+                time.sleep(10)
+                os.system("clear")
         else:
             self.format_func(result_file)
             
@@ -1464,8 +1467,11 @@ if __name__ == "__main__":
     is_limit = eval(config.get('base', 'is_limit'))  # 是否限制单次获取数量
     limit_num = int(config.get('base', 'limit_num')) # 限制数量
 
+    # 微信提醒
+    is_notify = eval(config.get('base', 'is_notify'))  # 是否发送微信提醒
+
     # 开始工作
-    sn = StockNet(token, is_limit, limit_num)
+    sn = StockNet(token, is_limit, limit_num, is_notify)
     sn.main()
 
     # 将当前自选加入监控列表
