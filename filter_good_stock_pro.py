@@ -1087,7 +1087,7 @@ class StockNet():
 
             # 然后分别获取3个(rank、zlrank_today、score)排序top10
             _rule6_list = []
-            for i in sorted(rule6_list, key=lambda x:x['rank'], reverse=True):
+            for i in sorted(rule6_list, key=lambda x:x['rank'], reverse=False):
                 if len(_rule6_list) >= 10:
                     break
                 else:
@@ -1101,7 +1101,7 @@ class StockNet():
                     if i in _rule6_list:continue
                     _rule6_list.append(i)
 
-            for i in sorted(rule6_list, key=lambda x:x['score'], reverse=False):
+            for i in sorted(rule6_list, key=lambda x:x['score'], reverse=True):
                 if len(_rule6_list) >= 30:
                     break
                 else:
