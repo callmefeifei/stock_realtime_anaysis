@@ -1014,7 +1014,6 @@ class StockNet():
         try:
             rule6_list = []
             # 首先按排名排序, 获取top50
-            import pdb;pdb.set_trace()
             for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
                 if len(rule6_list) >= 50:
                     break
