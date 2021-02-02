@@ -592,23 +592,6 @@ class StockNet():
 
     # 获取昨天收盘数据方法
     def yestody_data_func(self, code, url, ts_code):
-        """
-        # 获取当前均线价格
-        try:
-            ma_api = "https://quotes.sina.cn/cn/api/jsonp_v2.php/=/CN_MarketDataService.getKLineData?symbol=%s&scale=240&datalen=1" % (ts_code)
-            con = self.s.get(url=ma_api, timeout=10).text
-            con = json.loads(con.split("[")[1][:-3])
-            ma5 = float(con['ma_price5'])
-            ma10 = float(con['ma_price10'])
-            ma30 = float(con['ma_price30'])
-            trade = float(con['close'])
-        except Exception as e:
-            ma5 = 0
-            ma10 = 0
-            ma30 = 0
-            trade = 0
-        """
-
         # 获取当前均线价格
         try:
             ma_api = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=%s&scale=240&datalen=1" % (ts_code)
@@ -752,7 +735,14 @@ class StockNet():
         try:
             # 净流入
             con = self.s.get(url2, timeout=10).json()
-            self.now_format_stock_dict[code]['jlr'] = con[0]['ZLJLR'] / 10000
+            jlr = con[0]['ZLJLR'] / 10000
+
+            if code not in self.now_format_stock_dict.keys():
+                self.now_format_stock_dict[code] = {}
+                self.now_format_stock_dict[code]['jlr'] = jlr
+            else:
+                self.now_format_stock_dict[code]['jlr'] = jlr
+
             name = con[0]['Name']
             zdf = con[0]['ChangePercent']
             trade = con[0]['New']
@@ -800,29 +790,33 @@ class StockNet():
 
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
+
         try:
+
             # 涨跌幅
             if code.startswith("300") or code.startswith("00"):
                 secid = 0
             else:
                 secid = 1
 
-            """
             zdf_url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f170&ut=&_=1610344699504" % (secid, code)
             con = self.s.get(zdf_url, timeout=10).json()
             zdf = con['data']['f170']
-            """
+
+            jlr_url = url
+            con = self.s.get(jlr_url, timeout=10).json()
+            jlr = con['data']['klines'][0]
 
             zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
             con = self.s.get(zdf_url, timeout=10).json()
             name = con[0]['Name']            # 股票名称
-            zdf = con[0]['ChangePercent']    # 涨跌幅
+            zdf = zdf                        # 涨跌幅
             score = con[0]['TotalScore']     # 得分
             rank = con[0]['Ranking']         # 排名
             focus = con[0]['Focus']          # 关注度
             kpzt = con[0]['JGCYDType']       # 控盘状态
             zlcb = con[0]['ZLCB']            # 主力成本
-            jlr = con[0]['ZLJLR'] / 10000    # 净流入
+            jlr = jlr                        # 净流入
 
             if code not in self.now_stock_dict.keys():
                 self.now_stock_dict[code] = {}
@@ -852,16 +846,24 @@ class StockNet():
             try:
                 time.sleep(5)
 
+                zdf_url = "http://push2.eastmoney.com/api/qt/stock/get?cb=&fltt=2&invt=2&secid=%s.%s&fields=f170&ut=&_=1610344699504" % (secid, code)
+                con = self.s.get(zdf_url, timeout=10).json()
+                zdf = con['data']['f170']
+
+                jlr_url = url
+                con = self.s.get(jlr_url, timeout=10).json()
+                jlr = con['data']['klines'][0]
+
                 zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
                 con = self.s.get(zdf_url, timeout=10).json()
                 name = con[0]['Name']            # 股票名称
-                zdf = con[0]['ChangePercent']    # 涨跌幅
+                zdf = zdf                        # 涨跌幅
                 score = con[0]['TotalScore']     # 得分
                 rank = con[0]['Ranking']         # 排名
                 focus = con[0]['Focus']          # 关注度
                 kpzt = con[0]['JGCYDType']       # 控盘状态
                 zlcb = con[0]['ZLCB']            # 主力成本
-                jlr = con[0]['ZLJLR'] / 10000    # 净流入
+                jlr = jlr                        # 净流入
 
                 if code not in self.now_stock_dict.keys():
                     self.now_stock_dict[code] = {}
@@ -885,6 +887,7 @@ class StockNet():
                     self.now_stock_dict[code]['focus'] = focus
                     self.now_stock_dict[code]['kpzt'] = kpzt
                     self.now_stock_dict[code]['zlcb'] = zlcb
+
             except:
                 pass
 
@@ -1269,12 +1272,13 @@ class StockNet():
         all_stock_list = []
         sort_code_dict = {}
         for code in sort_code_list.keys():
+            # 资金状态
+            single = 0
+
             if code in self.now_format_stock_dict.keys():
                 # 首个净流入计算
                 fst_jlr = float(sort_code_list[code][0].split("[")[7].split("]")[0].split(":")[1].strip('万'))
 
-                # 资金状态
-                single = 0
                 if float(self.now_format_stock_dict[code]['jlr']) < 0:
                     if fst_jlr > 0:
                         note = '流出状态'
