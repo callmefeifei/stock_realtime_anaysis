@@ -1063,7 +1063,7 @@ class StockNet():
 
         try:
             rule6_list = []
-            # 首先按排名排序, 获取top50
+            # 首先按当日资金流入排名排序, 获取top50
             for i in sorted(self.now_stock_list, key=lambda x:x['zlrank_today'], reverse=False):
                 if len(rule6_list) >= 50:
                     break
@@ -1074,9 +1074,34 @@ class StockNet():
                     else:
                         rule6_list.append(i)
 
-            # 然后按净流入, 从大到小排序, 获取前25
-            _rule6_list = sorted(rule6_list, key=lambda x:x['rank'], reverse=False)
-            for i in sorted(_rule6_list, key=lambda x:x['rankup'], reverse=False)[:25]:
+            # 首先按昨日官方排名排序, 获取top50
+            for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
+                if len(rule6_list) >= 100:
+                    break
+                else:
+                    # 排除st、排除涨跌幅 > 5 的
+                    if 'ST' in i['name'] or i['zdf'] >= 8 or i['code'].startswith("68") or i in rule6_list:
+                            continue
+                    else:
+                        rule6_list.append(i)
+
+            # 然后分别获取3个(rank、zlrank_today、score)排序top10
+            _rule6_list = sorted(rule6_list, key=lambda x:x['rank'], reverse=False)[:10]
+            for i in sorted(rule6_list, key=lambda x:x['score'], reverse=True):
+                if len(_rule6_list) >= 20:
+                    break
+                else:
+                    if i in _rule6_list:continue
+                    _rule6_list.append(i)
+
+            for i in sorted(rule6_list, key=lambda x:x['zlrank_today'], reverse=False):
+                if len(_rule6_list) >= 30:
+                    break
+                else:
+                    if i in _rule6_list:continue
+                    _rule6_list.append(i)
+
+            for i in sorted(_rule6_list, key=lambda x:x['score'], reverse=True):
                 code = i['code']
                 stock = code
                 name = i['name']
@@ -1088,6 +1113,7 @@ class StockNet():
                 self.write_result("rule6", content)
 
         except Exception as e2:
+            print e2
             pass
 
         # rule5: 近五日净流入大 & 近五日涨跌幅小
