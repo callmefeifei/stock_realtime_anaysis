@@ -316,7 +316,7 @@ class StockNet():
             min1flow = (float(in_money_2) - float(in_money_1)) / 10000
 
             if code in self.yestoday_stock_dict.keys():
-                print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%.2f万 近一分钟净流入:%.2f万 与上分钟比资金流入倍数:%.2f | jlr_5days: %.2f | zdf_5days: %.2f" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
+                print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%.2f万 近一分钟净流入:%.2f万 与上分钟比资金流入倍数:%.2f | jlr_5days: %.2f | zdf_5days: %.2f" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'])
 
             # 资金流入倍数>1.5, 则认为异动. 资金流入倍数 -x, 跌
             is_matched = False
@@ -330,7 +330,7 @@ class StockNet():
 
             if is_matched:
                 content = "发现股票存在异动, 股票代码: %s[%s][%s][%s][%s万] | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs)
-                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.yestoday_stock_dict[code]['zdf_5days'])
+                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'])
 
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
@@ -789,6 +789,56 @@ class StockNet():
             self.now_format_stock_dict[code]['zl_ma20'] = 0
             self.now_format_stock_dict[code]['zl_ma60'] = 0
 
+
+        # 获取当日股票数据(所属行业、主力实时排名)
+        url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f184&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&fields=f2,f3,f12,f13,f14,f62,f184,f225,f165,f263,f109,f175,f264,f160,f100,f124,f265&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2"
+        data = self.s.get(url, timeout=5).json()['data']['diff']
+        for stock in data:
+            try:
+                code = stock['f12']                 # 股票代码
+                industry = stock['f100']            # 所属行业
+                zlrank_today = stock['f225']        # 今日排名
+                zlrank_5d = stock['f263']           # 五日主力排名
+                zdf_5d = stock['f109']              # 近五日涨跌幅
+                zlrannk_10d = stock['f264']         # 十日主力排名
+                zdf_10d = stock['f160']             # 近十日涨跌幅
+
+                if code in self.now_format_stock_dict.keys():
+                    self.now_format_stock_dict[code]['industry'] = industry
+                    self.now_format_stock_dict[code]['zlrank_today'] = zlrank_today
+                    self.now_format_stock_dict[code]['zlrank_5d'] = zlrank_5d
+                    self.now_format_stock_dict[code]['zdf_5d'] = zdf_5d
+                    self.now_format_stock_dict[code]['zlrannk_10d'] = zlrannk_10d
+                    self.now_format_stock_dict[code]['zdf_10d'] = zdf_10d
+            except:
+                continue
+
+        # 获取当日股票数据(最新价、涨跌幅、资金资金实时流入情况)
+        url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f62&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2&fields=f12,f14,f2,f3,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f204,f205,f124"
+        data = self.s.get(url, timeout=5).json()['data']['diff']
+        for stock in data:
+            try:
+                code = stock['f12']                 # 股票代码
+                name = stock['f14']                 # 股票名称
+                trade = stock['f2']                 # 最新价
+                zdf = stock['f3']                   # 涨跌幅
+                jlr = stock['f62']/10000                  # 主力净流入
+                cddjlr = stock['f66']/10000               # 超大单净流入
+                ddjlr = stock['f72']/10000                # 大单净流入
+                zdjlr = stock['f78']/10000                # 中单净流入
+                xdjlr = stock['f84']/10000                # 小单净流入
+
+                if code in self.now_format_stock_dict.keys():
+                    self.now_format_stock_dict[code]['zdf'] = zdf
+                    self.now_format_stock_dict[code]['jlr'] = jlr
+                    self.now_format_stock_dict[code]['trade'] = trade
+                    self.now_format_stock_dict[code]['cddjlr'] = cddjlr
+                    self.now_format_stock_dict[code]['ddjlr'] = ddjlr
+                    self.now_format_stock_dict[code]['zdjlr'] = zdjlr
+                    self.now_format_stock_dict[code]['xdjlr'] = xdjlr
+            except:
+                continue
+
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
         try:
@@ -1014,47 +1064,29 @@ class StockNet():
         try:
             rule6_list = []
             # 首先按排名排序, 获取top50
-            for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
+            for i in sorted(self.now_stock_list, key=lambda x:x['zlrank_today'], reverse=False):
                 if len(rule6_list) >= 50:
                     break
                 else:
                     # 排除st、排除涨跌幅 > 5 的
-                    if 'ST' in i['name'] or i['zdf'] > 5 or i['code'].startswith("68"):
+                    if 'ST' in i['name'] or i['zdf'] >= 8 or i['code'].startswith("68"):
                             continue
                     else:
                         rule6_list.append(i)
 
             # 然后按净流入, 从大到小排序, 获取前25
-            for i in sorted(rule6_list, key=lambda x:x['jlr'], reverse=True)[:20]:
+            _rule6_list = sorted(rule6_list, key=lambda x:x['rank'], reverse=False)
+            for i in sorted(_rule6_list, key=lambda x:x['rankup'], reverse=False)[:25]:
                 code = i['code']
                 stock = code
                 name = i['name']
                 zdf = self.yestoday_stock_dict[code]['zdf']
                 jlr = self.yestoday_stock_dict[code]['jlr']
-                content = "[+][%s][rule6][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                content = "[+][%s][rule6][%s][%s][zlrank:%s][score:%s][rank:%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近期涨跌幅(5/10):%s/%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], self.now_stock_dict[code]['zlrank_today'],self.now_stock_dict[code]['score'],self.now_stock_dict[code]['rank'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.now_stock_dict[code]['zdf_10d'])
                 if code not in self.rule_matched_list['rule6']:
                     self.rule_matched_list['rule6'].append(code)
                 self.write_result("rule6", content)
 
-            """
-            # 筛选近五日涨跌幅 <= 1的
-            for i in rule6_list:
-                try:
-                    if i['zdf_5days'] > 0 and i['zdf_5days'] <= 10:
-                        code = i['code']
-                        stock = code
-                        name = self.yestoday_stock_dict[code]['name']
-                        zdf = self.yestoday_stock_dict[code]['zdf']
-                        jlr = self.yestoday_stock_dict[code]['jlr']
-                        content = "[+][%s][rule6][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
-                        if code not in self.rule_matched_list['rule6']:
-                            self.rule_matched_list['rule6'].append(code)
-                        self.write_result("rule6", content)
-                    else:
-                        continue
-                except Exception as e1:
-                    continue
-            """
         except Exception as e2:
             pass
 
@@ -1082,7 +1114,7 @@ class StockNet():
                         name = self.yestoday_stock_dict[code]['name']
                         zdf = self.yestoday_stock_dict[code]['zdf']
                         jlr = self.yestoday_stock_dict[code]['jlr']
-                        content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                        content = "[+][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                         if code not in self.rule_matched_list['rule5']:
                             self.rule_matched_list['rule5'].append(code)
                         self.write_result("rule5", content)
@@ -1108,7 +1140,7 @@ class StockNet():
                 if jlr > 1000 and zdf >= 3:
                     # 今日净流出 < -1000
                     if self.now_stock_dict[stock]['jlr'] <= -1000 and self.now_stock_dict[stock]['zdf'] <= -4:
-                        content = "[+][%s][rule1][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                        content = "[+][%s][rule1][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                         #print content
                         if code not in self.rule_matched_list['rule1']:
                             self.rule_matched_list['rule1'].append(code)
@@ -1120,7 +1152,7 @@ class StockNet():
                     if self.now_stock_dict[stock]['jlr'] <= 0 and self.now_stock_dict[stock]['zdf'] <= 0:
                         # 小于5日线，大于30日线
                         if self.yestoday_stock_dict[stock]['trade'] < self.yestoday_stock_dict[stock]['ma5'] and self.yestoday_stock_dict[stock]['trade'] > self.yestoday_stock_dict[stock]['ma30']:
-                            content = "[+][%s][rule2][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                            content = "[+][%s][rule2][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                             #print content
                             if code not in self.rule_matched_list['rule2']:
                                 self.rule_matched_list['rule2'].append(code)
@@ -1133,10 +1165,10 @@ class StockNet():
                     and float(self.yestoday_stock_dict[stock]['stock_info_list'][-2][0]) < 0 \
                     and float(self.yestoday_stock_dict[stock]['stock_info_list'][-1][1]) < 0 \
                     and float(self.yestoday_stock_dict[stock]['stock_info_list'][-2][1]) < 0 \
-                    and self.yestoday_stock_dict[stock]['zdf_5days'] < 0 \
+                    and self.now_stock_dict[stock]['zdf_5d'] < 0 \
                     and self.yestoday_stock_dict[stock]['trade'] < self.yestoday_stock_dict[stock]['ma5'] and self.yestoday_stock_dict[stock]['trade'] > self.yestoday_stock_dict[stock]['ma30'] \
                     and 1==1:
-                    content = "[+][%s][rule3][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    content = "[+][%s][rule3][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     #print content
                     if code not in self.rule_matched_list['rule3']:
                         self.rule_matched_list['rule3'].append(code)
@@ -1155,7 +1187,7 @@ class StockNet():
                     and self.yestoday_stock_dict[stock]['ma30'] > self.yestoday_stock_dict[stock]['ma10'] \
                     and self.yestoday_stock_dict[stock]['ma10'] > self.yestoday_stock_dict[stock]['ma5'] \
                     and 1==1:
-                    content = "[+][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s万 近五日涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.yestoday_stock_dict[stock]['zdf_5days'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    content = "[+][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     #print content
                     if code not in self.rule_matched_list['rule4']:
                         self.rule_matched_list['rule4'].append(code)
@@ -1362,13 +1394,18 @@ class StockNet():
                         now_money_flow_bs = "\033[1;33m%.2f\033[0m" % now_money_flow_bs
 
                     if '流出' in note:
-                        msg = "[%s][%s][%s][%s/%.2f][%s] 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
+                        msg = "[%s][%s][%s][%s/%.2f][%s] 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
                                                                                                                 code, \
                                                                                                                 self.now_format_stock_dict[code]['name'], \
                                                                                                                 now_zdf, \
                                                                                                                 now_trade, \
                                                                                                                 self.now_format_stock_dict[code]['zlcb'], \
                                                                                                                 self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                self.now_format_stock_dict[code]['zlrank_today'], \
+                                                                                                                self.now_format_stock_dict[code]['zlrank_5d'], \
+                                                                                                                self.now_format_stock_dict[code]['zlrannk_10d'], \
+                                                                                                                self.now_format_stock_dict[code]['zdf_5d'], \
+                                                                                                                self.now_format_stock_dict[code]['zdf_10d'], \
                                                                                                                 score, \
                                                                                                                 rank, \
                                                                                                                 self.now_format_stock_dict[code]['jlr'], \
@@ -1378,13 +1415,18 @@ class StockNet():
                                                                                                                 note, \
                                                                                                                 now_money_flow_bs)
                     else:
-                        msg = "[%s][%s][%s][%s/%.2f][%s] 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
+                        msg = "[%s][%s][%s][%s/%.2f][%s] 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
                                                                                                                 code, \
                                                                                                                 self.now_format_stock_dict[code]['name'], \
                                                                                                                 now_zdf, \
                                                                                                                 now_trade, \
                                                                                                                 self.now_format_stock_dict[code]['zlcb'], \
                                                                                                                 self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                self.now_format_stock_dict[code]['zlrank_today'], \
+                                                                                                                self.now_format_stock_dict[code]['zlrank_5d'], \
+                                                                                                                self.now_format_stock_dict[code]['zlrannk_10d'], \
+                                                                                                                self.now_format_stock_dict[code]['zdf_5d'], \
+                                                                                                                self.now_format_stock_dict[code]['zdf_10d'], \
                                                                                                                 score, \
                                                                                                                 rank, \
                                                                                                                 self.now_format_stock_dict[code]['jlr'], \
