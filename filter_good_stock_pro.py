@@ -45,7 +45,7 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 """
 
 class StockNet():
-    def __init__(self, token=None, is_limit=False, limit_num=100):
+    def __init__(self, token=None, is_limit=False, limit_num=100, is_notify=False):
         # 重试请求方法
         self.headers = {
             "Referer":"http://data.eastmoney.com/",
