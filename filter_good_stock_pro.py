@@ -430,7 +430,7 @@ class StockNet():
                 if self.close_signal:
                     break
             except Exception as e:
-                print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
+                print("[-] 监控资金流入数据失败!! errcode:100300, errmsg:%s" % e)
                 time.sleep(3)
                 continue
 
@@ -725,7 +725,6 @@ class StockNet():
             return
 
     def format_now_stock(self, code, url, url2):
-
         try:
             # 净流入
             con = self.s.get(url, timeout=10).json()
@@ -792,9 +791,7 @@ class StockNet():
 
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
-
         try:
-
             # 涨跌幅
             if code.startswith("300") or code.startswith("00"):
                 secid = 0
@@ -811,6 +808,7 @@ class StockNet():
 
             zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
             con = self.s.get(zdf_url, timeout=10).json()
+
             name = con[0]['Name']            # 股票名称
             zdf = zdf                        # 涨跌幅
             score = con[0]['TotalScore']     # 得分
@@ -819,6 +817,7 @@ class StockNet():
             kpzt = con[0]['JGCYDType']       # 控盘状态
             zlcb = con[0]['ZLCB']            # 主力成本
             jlr = jlr                        # 净流入
+            rankup = con[0]['RankingUp']     # 近期排行上升还是下降?
 
             if code not in self.now_stock_dict.keys():
                 self.now_stock_dict[code] = {}
@@ -831,6 +830,7 @@ class StockNet():
                 self.now_stock_dict[code]['focus'] = focus
                 self.now_stock_dict[code]['kpzt'] = kpzt
                 self.now_stock_dict[code]['zlcb'] = zlcb
+                self.now_stock_dict[code]['rankup'] = rankup
 
             else:
                 self.now_stock_dict[code]['code'] = code
@@ -842,6 +842,7 @@ class StockNet():
                 self.now_stock_dict[code]['focus'] = focus
                 self.now_stock_dict[code]['kpzt'] = kpzt
                 self.now_stock_dict[code]['zlcb'] = zlcb
+                self.now_stock_dict[code]['rankup'] = rankup
 
         except Exception as e:
             # 重试
@@ -866,6 +867,7 @@ class StockNet():
                 kpzt = con[0]['JGCYDType']       # 控盘状态
                 zlcb = con[0]['ZLCB']            # 主力成本
                 jlr = jlr                        # 净流入
+                rankup = con[0]['RankingUp']     # 近期排行上升还是下降?
 
                 if code not in self.now_stock_dict.keys():
                     self.now_stock_dict[code] = {}
@@ -878,7 +880,7 @@ class StockNet():
                     self.now_stock_dict[code]['focus'] = focus
                     self.now_stock_dict[code]['kpzt'] = kpzt
                     self.now_stock_dict[code]['zlcb'] = zlcb
-
+                    self.now_stock_dict[code]['rankup'] = rankup
                 else:
                     self.now_stock_dict[code]['code'] = code
                     self.now_stock_dict[code]['name'] = name
@@ -889,6 +891,7 @@ class StockNet():
                     self.now_stock_dict[code]['focus'] = focus
                     self.now_stock_dict[code]['kpzt'] = kpzt
                     self.now_stock_dict[code]['zlcb'] = zlcb
+                    self.now_stock_dict[code]['rankup'] = rankup
 
             except:
                 pass
@@ -902,7 +905,8 @@ class StockNet():
 
             p = Pool(150)
             threads = []
-            # 获取当日收盘数据开始
+
+            # 获取当日收盘数据(市场排行、控盘状态)
             self.now_data_status = 1
             for u in all_url:
                 code = u[0]
@@ -912,15 +916,63 @@ class StockNet():
 
             gevent.joinall(threads)
 
+            # 获取当日股票数据(所属行业、主力实时排名)
+            url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f184&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&fields=f2,f3,f12,f13,f14,f62,f184,f225,f165,f263,f109,f175,f264,f160,f100,f124,f265&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2"
+            data = self.s.get(url, timeout=5).json()['data']['diff']
+            for stock in data:
+                try:
+                    code = stock['f12']                 # 股票代码
+                    industry = stock['f100']            # 所属行业
+                    zlrank_today = stock['f225']        # 今日排名
+                    zlrank_5d = stock['f263']           # 五日主力排名
+                    zdf_5d = stock['f109']              # 近五日涨跌幅
+                    zlrannk_10d = stock['f264']         # 十日主力排名
+                    zdf_10d = stock['f160']             # 近十日涨跌幅
+
+                    if code in self.now_stock_dict.keys():
+                        self.now_stock_dict[code]['industry'] = industry
+                        self.now_stock_dict[code]['zlrank_today'] = zlrank_today
+                        self.now_stock_dict[code]['zlrank_5d'] = zlrank_5d
+                        self.now_stock_dict[code]['zdf_5d'] = zdf_5d
+                        self.now_stock_dict[code]['zlrannk_10d'] = zlrannk_10d
+                        self.now_stock_dict[code]['zdf_10d'] = zdf_10d
+                except:
+                    continue
+
+            # 获取当日股票数据(最新价、涨跌幅、资金资金实时流入情况)
+            url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f62&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2&fields=f12,f14,f2,f3,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f204,f205,f124"
+            data = self.s.get(url, timeout=5).json()['data']['diff']
+            for stock in data:
+                try:
+                    code = stock['f12']                 # 股票代码
+                    name = stock['f14']                 # 股票名称
+                    trade = stock['f2']                 # 最新价
+                    zdf = stock['f3']                   # 涨跌幅
+                    jlr = stock['f62']/10000                  # 主力净流入
+                    cddjlr = stock['f66']/10000               # 超大单净流入
+                    ddjlr = stock['f72']/10000                # 大单净流入
+                    zdjlr = stock['f78']/10000                # 中单净流入
+                    xdjlr = stock['f84']/10000                # 小单净流入
+
+                    if code in self.now_stock_dict.keys():
+                        self.now_stock_dict[code]['zdf'] = zdf
+                        self.now_stock_dict[code]['jlr'] = jlr
+                        self.now_stock_dict[code]['trade'] = trade
+                        self.now_stock_dict[code]['cddjlr'] = cddjlr
+                        self.now_stock_dict[code]['ddjlr'] = ddjlr
+                        self.now_stock_dict[code]['zdjlr'] = zdjlr
+                        self.now_stock_dict[code]['xdjlr'] = xdjlr
+                except:
+                    continue
+
             # 生成今日股票数据列表
             self.now_stock_list = []
             for i in self.now_stock_dict:
                 self.now_stock_list.append(self.now_stock_dict[i])
 
         except Exception as e:
-            print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
-            sys.exit()
-
+            print("[-] 获取今日股票收盘数据失败!! errcode:100208, errmsg:%s" % e)
+            return
 
     # 均线数据获取赋值
     def jx_data_func(self, url, code):
@@ -961,13 +1013,17 @@ class StockNet():
 
         try:
             rule6_list = []
-
             # 首先按排名排序, 获取top50
+            import pdb;pdb.set_trace()
             for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
                 if len(rule6_list) >= 50:
                     break
                 else:
-                    rule6_list.append(i)
+                    # 排除st、排除涨跌幅 > 5 的
+                    if 'ST' in i['name'] or i['zdf'] > 5 or i['code'].startswith("68"):
+                            continue
+                    else:
+                        rule6_list.append(i)
 
             # 然后按净流入, 从大到小排序, 获取前25
             for i in sorted(rule6_list, key=lambda x:x['jlr'], reverse=True)[:20]:
@@ -1164,61 +1220,6 @@ class StockNet():
 
         except Exception as e:
             print("[-] 获取股票均线数据失败!! errcode:100203, errmsg:%s" % e)
-            sys.exit()
-
-    def work(self):
-        # > ----------------------------- 1. 监听进度线程 ----------------------------- 
-        threading.Thread(target=self.status_monitor, args=()).start()
-
-        t1 = threading.Thread(target=self.monitor_money_flow, args=())
-        t1.start()
-
-        # > ----------------------------- > 获取股票代码列表&前缀 -----------------------------
-        # > ----------------------------- > 获取所有股票代码均线数据 --------------------------
-        self.get_all_code()
-
-        # > ----------------------------- > 获取均线数据方法 --------------------------
-        self.get_jx_data()
-        # 获取均线数据结束
-        self.jx_data_status = 2
-
-        # > ----------------------------- > 获取当日收盘数据方法 --------------------------
-        while True:
-            if int(time.strftime('%H' , time.localtime())) >= 11 and int(time.strftime('%H' , time.localtime())) < 13:
-                if int(time.strftime('%H' , time.localtime())) == 11:
-                    if int(time.strftime('%M' , time.localtime())) >= 30:
-                        print("[-] 午市休息中..")
-                        time.sleep(5)
-                        continue
-                elif int(time.strftime('%H' , time.localtime())) == 12 and int(time.strftime('%M' , time.localtime())) >= 55:
-                    pass
-                else:
-                    print("[-] 午市休息中..")
-                    time.sleep(5)
-                    continue
-
-            # > ----------------------------- 5. 获取昨日收盘数据方法 --------------------------
-            self.get_yestody_stock()
-            # 获取昨日数据结束
-            self.ys_data_status = 2
-
-            self.jx_data_count = 0
-            self.ys_data_count = 0
-            self.now_data_count = 0
-
-            self.get_now_stock()
-            # 获取当日数据结束
-            self.now_data_status = 2
-
-            # > ----------------------------- 7. 套用规则 --------------------------
-            self.rule_filter()
-
-            print "[*] 本次分析完毕, 昨日数据 与 今日数据比相差 %s 个." % (len(self.yestoday_stock_dict.keys()) - len(self.now_stock_dict.keys()))
-
-            if int(time.strftime('%H' , time.localtime())) >= 15:
-                print("[-] 交易已结束, 退出..")
-                self.close_signal = True
-                sys.exit()
 
     def format_func(self, result_file):
         with open(result_file, 'r') as f:
@@ -1267,8 +1268,7 @@ class StockNet():
             gevent.joinall(threads)
 
         except Exception as e:
-            print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
-            sys.exit()
+            print("[-] 格式化日志输出失败!! errcode:100209, errmsg:%s" % e)
 
         # 打印结果
         all_stock_list = []
@@ -1356,8 +1356,14 @@ class StockNet():
                     else:
                         now2zlcb = "\033[1;34m%s%%\033[0m" % now2zlcb
 
+                    # 增长倍数
+                    if float(now_money_flow_bs) > 2.5:
+                        now_money_flow_bs = "\033[1;31m%.2f\033[0m" % now_money_flow_bs
+                    else:
+                        now_money_flow_bs = "\033[1;33m%.2f\033[0m" % now_money_flow_bs
+
                     if '流出' in note:
-                        msg = "[%s][%s][%s][%s/%.2f][%s] 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%.2f" % ( 
+                        msg = "[%s][%s][%s][%s/%.2f][%s] 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
                                                                                                                 code, \
                                                                                                                 self.now_format_stock_dict[code]['name'], \
                                                                                                                 now_zdf, \
@@ -1373,7 +1379,7 @@ class StockNet():
                                                                                                                 note, \
                                                                                                                 now_money_flow_bs)
                     else:
-                        msg = "[%s][%s][%s][%s/%.2f][%s] 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%.2f" % (
+                        msg = "[%s][%s][%s][%s/%.2f][%s] 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
                                                                                                                 code, \
                                                                                                                 self.now_format_stock_dict[code]['name'], \
                                                                                                                 now_zdf, \
@@ -1415,7 +1421,62 @@ class StockNet():
                 os.system("clear")
         else:
             self.format_func(result_file)
-            
+
+
+    def work(self):
+        # > ----------------------------- 1. 监听进度线程 ----------------------------- 
+        threading.Thread(target=self.status_monitor, args=()).start()
+
+        t1 = threading.Thread(target=self.monitor_money_flow, args=())
+        t1.start()
+
+        # > ----------------------------- * 获取股票代码列表&前缀 * -----------------------------
+        # > ----------------------------- * 获取所有股票代码均线数据 * --------------------------
+        self.get_all_code()
+
+        # > ----------------------------- * 获取均线数据方法 * --------------------------
+        self.get_jx_data()
+        # 获取均线数据结束
+        self.jx_data_status = 2
+
+        while True:
+            if int(time.strftime('%H' , time.localtime())) >= 11 and int(time.strftime('%H' , time.localtime())) < 13:
+                if int(time.strftime('%H' , time.localtime())) == 11:
+                    if int(time.strftime('%M' , time.localtime())) >= 30:
+                        print("[-] 午市休息中..")
+                        time.sleep(5)
+                        continue
+                elif int(time.strftime('%H' , time.localtime())) == 12 and int(time.strftime('%M' , time.localtime())) >= 55:
+                    pass
+                else:
+                    print("[-] 午市休息中..")
+                    time.sleep(5)
+                    continue
+
+            # > ----------------------------- * 获取昨日收盘数据方法 * --------------------------
+            self.get_yestody_stock()
+            # 获取昨日数据结束
+            self.ys_data_status = 2
+
+            self.jx_data_count = 0
+            self.ys_data_count = 0
+            self.now_data_count = 0
+
+            # > ----------------------------- * 获取当日收盘数据方法 * --------------------------
+            self.get_now_stock()
+            # 获取当日数据结束
+            self.now_data_status = 2
+
+            # > ----------------------------- * 过滤规则 * --------------------------
+            self.rule_filter()
+
+            print "[*] 本次分析完毕, 昨日数据 与 今日数据比相差 %s 个." % (len(self.yestoday_stock_dict.keys()) - len(self.now_stock_dict.keys()))
+
+            if int(time.strftime('%H' , time.localtime())) >= 15:
+                print("[-] 交易已结束, 退出..")
+                self.close_signal = True
+                sys.exit()
+
     def main(self):
         if not os.path.exists("./config/settings.conf"):
             print("[-] settings.conf is not found, pls check it!")
