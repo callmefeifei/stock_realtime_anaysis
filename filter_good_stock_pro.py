@@ -144,10 +144,7 @@ class StockNet():
 
     # 结果保存
     def write_result(self, rule, content):
-        if time.strftime('%H' , time.localtime()) < 12:
-            filename = time.strftime('%Y%m%d' , time.localtime())+"_"+rule+"_sw.txt"
-        else:
-            filename = time.strftime('%Y%m%d' , time.localtime())+"_"+rule+"_xw.txt"
+        filename = time.strftime('%Y%m%d' , time.localtime())+"_"+rule+".txt"
 
         if not os.path.exists("./result/"):
             os.makedirs("./result/")
