@@ -1444,6 +1444,22 @@ class StockNet():
                     else:
                         now_money_flow_bs = "\033[1;33m%.2f\033[0m" % now_money_flow_bs
 
+                    # 当前净流入
+                    if self.now_format_stock_dict[code]['jlr'] > 1000:
+                        now_jlr = "\033[1;31m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
+                    elif self.now_format_stock_dict[code]['jlr'] >= 500:
+                        now_jlr = "\033[1;32m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
+                    else:
+                        now_jlr = self.now_format_stock_dict[code]['jlr']
+
+                    # 主力排名
+                    if self.now_format_stock_dict[code]['zlrank_today'] > self.now_format_stock_dict[code]['zlrank_5d'] and self.now_format_stock_dict[code]['zlrank_today'] > self.now_format_stock_dict[code]['zlrank_10d']:
+                        zlrank_today = "\033[1;31m%.2f\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
+                    elif self.now_format_stock_dict[code]['zlrank_today'] > self.now_format_stock_dict[code]['zlrank_5d']:
+                        zlrank_today = "\033[1;32m%.2f\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
+                    else:
+                        zlrank_today = self.now_format_stock_dict[code]['zlrank_today']
+
                     if '流出' in note:
                         msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%.2f万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
                                                                                                                 code, \
@@ -1452,7 +1468,7 @@ class StockNet():
                                                                                                                 now_trade, \
                                                                                                                 self.now_format_stock_dict[code]['zlcb'], \
                                                                                                                 self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                self.now_format_stock_dict[code]['jlr'], \
+                                                                                                                now_jlr, \
                                                                                                                 score, \
                                                                                                                 rank, \
                                                                                                                 self.now_format_stock_dict[code]['zlrank_today'], \
@@ -1475,7 +1491,7 @@ class StockNet():
                                                                                                                 now_trade, \
                                                                                                                 self.now_format_stock_dict[code]['zlcb'], \
                                                                                                                 self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                self.now_format_stock_dict[code]['jlr'], \
+                                                                                                                now_jlr, \
                                                                                                                 score, \
                                                                                                                 rank, \
                                                                                                                 self.now_format_stock_dict[code]['zlrank_today'], \
