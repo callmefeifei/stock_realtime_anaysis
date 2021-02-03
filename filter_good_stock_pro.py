@@ -1069,7 +1069,7 @@ class StockNet():
                     break
                 else:
                     # 排除st、排除涨跌幅 > 5 的
-                    if 'ST' in i['name'] or i['zdf'] >= 8 or i['code'].startswith("68"):
+                    if 'ST' in i['name'] or i['zdf'] > 5 or i['code'].startswith("68"):
                             continue
                     else:
                         rule6_list.append(i)
@@ -1080,7 +1080,7 @@ class StockNet():
                     break
                 else:
                     # 排除st、排除涨跌幅 > 5 的
-                    if 'ST' in i['name'] or i['zdf'] >= 8 or i['code'].startswith("68") or i in rule6_list:
+                    if 'ST' in i['name'] or i['zdf'] > 5 or i['code'].startswith("68") or i in rule6_list:
                             continue
                     else:
                         rule6_list.append(i)
@@ -1091,7 +1091,7 @@ class StockNet():
                     break
                 else:
                     # 排除st、排除涨跌幅 > 5 的
-                    if 'ST' in i['name'] or i['zdf'] >= 8 or i['code'].startswith("68") or i in rule6_list:
+                    if 'ST' in i['name'] or i['zdf'] > 5 or i['code'].startswith("68") or i in rule6_list:
                             continue
                     else:
                         rule6_list.append(i)
