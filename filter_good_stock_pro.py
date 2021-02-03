@@ -1074,9 +1074,20 @@ class StockNet():
                     else:
                         rule6_list.append(i)
 
-            # 首先按昨日官方排名排序, 获取top50
+            # 然后按昨日官方排名排序, 获取top50
             for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
                 if len(rule6_list) >= 100:
+                    break
+                else:
+                    # 排除st、排除涨跌幅 > 5 的
+                    if 'ST' in i['name'] or i['zdf'] >= 8 or i['code'].startswith("68") or i in rule6_list:
+                            continue
+                    else:
+                        rule6_list.append(i)
+
+            # 最后按实时资金净流入排行, 获取top50
+            for i in sorted(self.now_stock_list, key=lambda x:x['jlr'], reverse=False):
+                if len(rule6_list) >= 150:
                     break
                 else:
                     # 排除st、排除涨跌幅 > 5 的
@@ -1103,6 +1114,13 @@ class StockNet():
 
             for i in sorted(rule6_list, key=lambda x:x['score'], reverse=True):
                 if len(_rule6_list) >= 30:
+                    break
+                else:
+                    if i in _rule6_list:continue
+                    _rule6_list.append(i)
+
+            for i in sorted(rule6_list, key=lambda x:x['jlr'], reverse=True):
+                if len(_rule6_list) >= 40:
                     break
                 else:
                     if i in _rule6_list:continue
