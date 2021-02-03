@@ -45,7 +45,7 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 """
 
 class StockNet():
-    def __init__(self, token=None, is_limit=False, limit_num=100, is_notify=False):
+    def __init__(self, token=None, is_limit=False, limit_num=100, is_notify=False, cookie="", appkey=""):
         # 重试请求方法
         self.headers = {
             "Referer":"http://data.eastmoney.com/",
@@ -55,6 +55,18 @@ class StockNet():
         self.s.mount('http://', HTTPAdapter(max_retries=2))
         self.s.mount('https://', HTTPAdapter(max_retries=2))
         self.s.headers.update(self.headers)
+
+        # 东方财富请求方法
+        self.ds = requests.Session()
+        self.ds.mount('http://', HTTPAdapter(max_retries=2))
+        self.ds.mount('https://', HTTPAdapter(max_retries=2))
+        self.ds_headers = {
+            "Referer":"http://data.eastmoney.com/",
+            "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36",
+            "Cookie":cookie
+        }
+        self.ds.headers.update(self.ds_headers)
+        self.appkey = appkey
 
         # 告警token
         self.wx_token = token
@@ -805,53 +817,59 @@ class StockNet():
 
 
         # 获取当日股票数据(所属行业、主力实时排名)
-        url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f184&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&fields=f2,f3,f12,f13,f14,f62,f184,f225,f165,f263,f109,f175,f264,f160,f100,f124,f265&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2"
-        data = self.s.get(url, timeout=10).json()['data']['diff']
-        for stock in data:
-            try:
-                code = stock['f12']                 # 股票代码
-                industry = stock['f100']            # 所属行业
-                zlrank_today = stock['f225']        # 今日排名
-                zlrank_5d = stock['f263']           # 五日主力排名
-                zdf_5d = stock['f109']              # 近五日涨跌幅
-                zlrannk_10d = stock['f264']         # 十日主力排名
-                zdf_10d = stock['f160']             # 近十日涨跌幅
+        try:
+            url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f184&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&fields=f2,f3,f12,f13,f14,f62,f184,f225,f165,f263,f109,f175,f264,f160,f100,f124,f265&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2"
+            data = self.s.get(url, timeout=10).json()['data']['diff']
+            for stock in data:
+                try:
+                    code = stock['f12']                 # 股票代码
+                    industry = stock['f100']            # 所属行业
+                    zlrank_today = stock['f225']        # 今日排名
+                    zlrank_5d = stock['f263']           # 五日主力排名
+                    zdf_5d = stock['f109']              # 近五日涨跌幅
+                    zlrannk_10d = stock['f264']         # 十日主力排名
+                    zdf_10d = stock['f160']             # 近十日涨跌幅
 
-                if code in self.now_format_stock_dict.keys():
-                    self.now_format_stock_dict[code]['industry'] = industry
-                    self.now_format_stock_dict[code]['zlrank_today'] = zlrank_today
-                    self.now_format_stock_dict[code]['zlrank_5d'] = zlrank_5d
-                    self.now_format_stock_dict[code]['zdf_5d'] = zdf_5d
-                    self.now_format_stock_dict[code]['zlrannk_10d'] = zlrannk_10d
-                    self.now_format_stock_dict[code]['zdf_10d'] = zdf_10d
-            except:
-                continue
+                    if code in self.now_format_stock_dict.keys():
+                        self.now_format_stock_dict[code]['industry'] = industry
+                        self.now_format_stock_dict[code]['zlrank_today'] = zlrank_today
+                        self.now_format_stock_dict[code]['zlrank_5d'] = zlrank_5d
+                        self.now_format_stock_dict[code]['zdf_5d'] = zdf_5d
+                        self.now_format_stock_dict[code]['zlrannk_10d'] = zlrannk_10d
+                        self.now_format_stock_dict[code]['zdf_10d'] = zdf_10d
+                except:
+                    continue
+        except:
+            pass
 
-        # 获取当日股票数据(最新价、涨跌幅、资金资金实时流入情况)
-        url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f62&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2&fields=f12,f14,f2,f3,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f204,f205,f124"
-        data = self.s.get(url, timeout=10).json()['data']['diff']
-        for stock in data:
-            try:
-                code = stock['f12']                 # 股票代码
-                name = stock['f14']                 # 股票名称
-                trade = stock['f2']                 # 最新价
-                zdf = stock['f3']                   # 涨跌幅
-                jlr = stock['f62']/10000                  # 主力净流入
-                cddjlr = stock['f66']/10000               # 超大单净流入
-                ddjlr = stock['f72']/10000                # 大单净流入
-                zdjlr = stock['f78']/10000                # 中单净流入
-                xdjlr = stock['f84']/10000                # 小单净流入
+        try:
+            # 获取当日股票数据(最新价、涨跌幅、资金资金实时流入情况)
+            url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f62&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2&fields=f12,f14,f2,f3,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f204,f205,f124"
+            data = self.s.get(url, timeout=10).json()['data']['diff']
+            for stock in data:
+                try:
+                    code = stock['f12']                 # 股票代码
+                    name = stock['f14']                 # 股票名称
+                    trade = stock['f2']                 # 最新价
+                    zdf = stock['f3']                   # 涨跌幅
+                    jlr = stock['f62']/10000                  # 主力净流入
+                    cddjlr = stock['f66']/10000               # 超大单净流入
+                    ddjlr = stock['f72']/10000                # 大单净流入
+                    zdjlr = stock['f78']/10000                # 中单净流入
+                    xdjlr = stock['f84']/10000                # 小单净流入
 
-                if code in self.now_format_stock_dict.keys():
-                    self.now_format_stock_dict[code]['zdf'] = zdf
-                    self.now_format_stock_dict[code]['jlr'] = jlr
-                    self.now_format_stock_dict[code]['trade'] = trade
-                    self.now_format_stock_dict[code]['cddjlr'] = cddjlr
-                    self.now_format_stock_dict[code]['ddjlr'] = ddjlr
-                    self.now_format_stock_dict[code]['zdjlr'] = zdjlr
-                    self.now_format_stock_dict[code]['xdjlr'] = xdjlr
-            except:
-                continue
+                    if code in self.now_format_stock_dict.keys():
+                        self.now_format_stock_dict[code]['zdf'] = zdf
+                        self.now_format_stock_dict[code]['jlr'] = jlr
+                        self.now_format_stock_dict[code]['trade'] = trade
+                        self.now_format_stock_dict[code]['cddjlr'] = cddjlr
+                        self.now_format_stock_dict[code]['ddjlr'] = ddjlr
+                        self.now_format_stock_dict[code]['zdjlr'] = zdjlr
+                        self.now_format_stock_dict[code]['xdjlr'] = xdjlr
+                except:
+                    continue
+        except:
+            pass
 
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
@@ -1529,7 +1547,7 @@ class StockNet():
                 for stock in sort_code_list[code]:
                     if single == 1 or self.format_all is True:
                         if '出现大幅流入' in stock:
-                            stock = "\033[1;31m%s\033[0m" % stock
+                            stock = "\033[1;34m%s\033[0m" % stock
                             print stock
                         else:
                             stock = "\033[1;32m%s\033[0m" % stock
@@ -1555,6 +1573,67 @@ class StockNet():
         else:
             self.format_func(result_file)
 
+    def add2zx_func(self, result_file, gid):
+        with open(result_file, 'r') as f:
+            result = f.read()
+
+        sort_code_list = {}
+        for stock in result.split("\n"):
+            try:
+                code = stock.split("[")[3].strip("]")
+                if code in sort_code_list.keys():
+                    sort_code_list[code].append(stock)
+                else:
+                    sort_code_list[code] = []
+                    sort_code_list[code].append(stock)
+            except:
+                continue
+
+        for code in sort_code_list.keys():
+            if code.startswith("300") or code.startswith("00"):
+                secid = 0
+            elif code.startswith("68"):
+                continue
+            else:
+                secid = 1
+
+            url = "http://myfavor.eastmoney.com/v4/webouter/as?appkey=%s&cb=&g=%s&sc=%s$%s&_=1612340046932" % (self.appkey, gid, secid, code)
+            print self.ds.get(url, timeout=10).text
+
+    def add2zx(self, result_file):
+        if not os.path.exists(result_file):
+            print("[-] File not found!")
+            parser.print_help()
+
+        # 首先返回组列表
+        _ginfolist = self.ginfolist()
+
+        # 判断是否存在以当天时间命名的自选组
+        today = time.strftime('%Y%m%d' , time.localtime())
+        if today in _ginfolist.keys():
+            gid = _ginfolist[today]
+        else:
+            gid = self.add_group(today)
+
+        self.add2zx_func(result_file, gid)
+
+    # 新增自选组
+    def add_group(self, group):
+        # 如果不存在, 则创建, 并返回group_id
+        url = "http://myfavor.eastmoney.com/v4/webouter/ag?appkey=%s&cb=&gn=%s&_=1612340046939" % (self.appkey, group)
+        result = self.ds.get(url, timeout=5).json()
+        return result['data']['gid']
+
+    # 返回组列表
+    def ginfolist(self):
+        url = "http://myfavor.eastmoney.com/v4/webouter/ggdefstkindexinfos?appkey=%s&cb=" % self.appkey
+        group_info = self.ds.get(url, timeout=5).json()
+        g_list = group_info['data']['ginfolist']
+        g_dict = {}
+        for g in g_list:
+            g_dict[g['gname']] = g['gid']
+
+        return g_dict
 
     def work(self):
         # > ----------------------------- 1. 监听进度线程 ----------------------------- 
@@ -1587,7 +1666,9 @@ class StockNet():
                     continue
 
             # > ----------------------------- * 获取昨日收盘数据方法 * --------------------------
-            self.get_yestody_stock()
+            with gevent.Timeout(300, False) as timeout:
+                self.get_yestody_stock()
+
             # 获取昨日数据结束
             self.ys_data_status = 2
 
@@ -1596,7 +1677,9 @@ class StockNet():
             self.now_data_count = 0
 
             # > ----------------------------- * 获取当日收盘数据方法 * --------------------------
-            self.get_now_stock()
+            with gevent.Timeout(300, False) as timeout:
+                self.get_now_stock()
+
             # 获取当日数据结束
             self.now_data_status = 2
 
@@ -1618,6 +1701,8 @@ class StockNet():
             parser = OptionParser()
 
             parser.add_option("--format_result", dest="format_result", default=False, help=u"查看结果, --format_result result/20210129_money_flow.txt")
+
+            parser.add_option("--add2zx", dest="add2zx", default=False, help=u"添加到东方财富自选, --add2zx result/2021-02-03/20210129_money_flow.txt")
 
             parser.add_option("--format_loop", action="store_true", dest="format_loop", default=False, help=u"是否循环查看异动股票")
 
@@ -1641,6 +1726,11 @@ class StockNet():
                         self.format_all = False
 
                     self.format_result(result_file, parser)
+
+                if options.add2zx:
+                    result_file = options.add2zx
+                    self.add2zx(result_file)
+
                 else:
                     self.work()
 
@@ -1664,8 +1754,14 @@ if __name__ == "__main__":
     # 微信提醒
     is_notify = eval(config.get('base', 'is_notify'))  # 是否发送微信提醒
 
+    # Cookies
+    cookie = config.get('user', 'cookie')
+
+    # appkey
+    appkey = config.get('user', 'appkey')
+
     # 开始工作
-    sn = StockNet(token, is_limit, limit_num, is_notify)
+    sn = StockNet(token, is_limit, limit_num, is_notify, cookie, appkey)
     sn.main()
 
     # 将当前自选加入监控列表

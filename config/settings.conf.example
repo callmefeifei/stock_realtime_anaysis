@@ -15,3 +15,6 @@ limit_num = 100
 #zxg_list = ["000001", "000002"]
 is_zxg_monitor = True
 zxg_list = []
+
+[user]
+cookie = 1111
