@@ -316,7 +316,7 @@ class StockNet():
             min1flow = (float(in_money_2) - float(in_money_1)) / 10000
 
             if code in self.yestoday_stock_dict.keys():
-                print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%.2f万 近一分钟净流入:%.2f万 与上分钟比资金流入倍数:%.2f | jlr_5days: %.2f | zdf_5days: %.2f" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'])
+                print "[*][%s][%s][%s][%s] 现价:%s 涨跌幅:%s 当前资金净流入:%.2f万 近一分钟净流入:%.2f万 与上分钟比资金流入倍数:%.2f | jlr_5days: %.2f | zdf_5days: %.2f" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), rule_type, code, name, now_trade, now_changepercent, in_money_2/10000, min1flow, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[code]['zdf_5d'])
 
             # 资金流入倍数>1.5, 则认为异动. 资金流入倍数 -x, 跌
             is_matched = False
@@ -330,7 +330,7 @@ class StockNet():
 
             if is_matched:
                 content = "发现股票存在异动, 股票代码: %s[%s][%s][%s][%s万] | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs)
-                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'])
+                _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[code]['zdf_5d'])
 
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
