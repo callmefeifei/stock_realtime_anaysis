@@ -52,8 +52,8 @@ class StockNet():
             "User-Agent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 11_1_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/87.0.4280.141 Safari/537.36"
         }
         self.s = requests.Session()
-        self.s.mount('http://', HTTPAdapter(max_retries=3))
-        self.s.mount('https://', HTTPAdapter(max_retries=3))
+        self.s.mount('http://', HTTPAdapter(max_retries=2))
+        self.s.mount('https://', HTTPAdapter(max_retries=2))
         self.s.headers.update(self.headers)
 
         # 告警token
@@ -1427,13 +1427,16 @@ class StockNet():
                         now_money_flow_bs = "\033[1;33m%.2f\033[0m" % now_money_flow_bs
 
                     if '流出' in note:
-                        msg = "[%s][%s][%s][%s/%.2f][%s] 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
+                        msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%.2f万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
                                                                                                                 code, \
                                                                                                                 self.now_format_stock_dict[code]['name'], \
                                                                                                                 now_zdf, \
                                                                                                                 now_trade, \
                                                                                                                 self.now_format_stock_dict[code]['zlcb'], \
                                                                                                                 self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                self.now_format_stock_dict[code]['jlr'], \
+                                                                                                                score, \
+                                                                                                                rank, \
                                                                                                                 self.now_format_stock_dict[code]['zlrank_today'], \
                                                                                                                 self.now_format_stock_dict[code]['zlrank_5d'], \
                                                                                                                 self.now_format_stock_dict[code]['zlrannk_10d'], \
@@ -1441,28 +1444,27 @@ class StockNet():
                                                                                                                 self.now_format_stock_dict[code]['zdf_10d'], \
                                                                                                                 score, \
                                                                                                                 rank, \
-                                                                                                                self.now_format_stock_dict[code]['jlr'], \
                                                                                                                 now2zlcb, \
                                                                                                                 zl_nowto20, \
                                                                                                                 zl_20to60, \
                                                                                                                 note, \
                                                                                                                 now_money_flow_bs)
                     else:
-                        msg = "[%s][%s][%s][%s/%.2f][%s] 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s 得分:%s 排名:%s 当前净流入:%.2f万 now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
+                        msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%.2f万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
                                                                                                                 code, \
                                                                                                                 self.now_format_stock_dict[code]['name'], \
                                                                                                                 now_zdf, \
                                                                                                                 now_trade, \
                                                                                                                 self.now_format_stock_dict[code]['zlcb'], \
                                                                                                                 self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                self.now_format_stock_dict[code]['jlr'], \
+                                                                                                                score, \
+                                                                                                                rank, \
                                                                                                                 self.now_format_stock_dict[code]['zlrank_today'], \
                                                                                                                 self.now_format_stock_dict[code]['zlrank_5d'], \
                                                                                                                 self.now_format_stock_dict[code]['zlrannk_10d'], \
                                                                                                                 self.now_format_stock_dict[code]['zdf_5d'], \
                                                                                                                 self.now_format_stock_dict[code]['zdf_10d'], \
-                                                                                                                score, \
-                                                                                                                rank, \
-                                                                                                                self.now_format_stock_dict[code]['jlr'], \
                                                                                                                 now2zlcb, \
                                                                                                                 zl_nowto20, \
                                                                                                                 zl_20to60, \
