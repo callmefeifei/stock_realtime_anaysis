@@ -360,6 +360,20 @@ class StockNet():
         # 循环监控
         while True:
             try:
+
+                if int(time.strftime('%H' , time.localtime())) >= 11 and int(time.strftime('%H' , time.localtime())) < 13:
+                    if int(time.strftime('%H' , time.localtime())) == 11:
+                        if int(time.strftime('%M' , time.localtime())) >= 30:
+                            print("[-] 午市休息中..")
+                            time.sleep(5)
+                            continue
+                    elif int(time.strftime('%H' , time.localtime())) == 12 and int(time.strftime('%M' , time.localtime())) >= 55:
+                        pass
+                    else:
+                        print("[-] 午市休息中..")
+                        time.sleep(5)
+                        continue
+
                 # rule1
                 rule1_list = self.rule_matched_list['rule1']
             
@@ -1456,10 +1470,10 @@ class StockNet():
                             now_jlr = self.now_format_stock_dict[code]['jlr']
 
                         # 主力排名
-                        if self.now_format_stock_dict[code]['zlrank_today'] > self.now_format_stock_dict[code]['zlrank_5d'] and self.now_format_stock_dict[code]['zlrank_today'] > self.now_format_stock_dict[code]['zlrannk_10d']:
-                            zlrank_today = "\033[1;31m%.2f\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
-                        elif self.now_format_stock_dict[code]['zlrank_today'] > self.now_format_stock_dict[code]['zlrank_5d']:
-                            zlrank_today = "\033[1;33m%.2f\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
+                        if self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrank_5d'] and self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrannk_10d']:
+                            zlrank_today = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
+                        elif self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrank_5d']:
+                            zlrank_today = "\033[1;33m%s\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
                         else:
                             zlrank_today = self.now_format_stock_dict[code]['zlrank_today']
 
@@ -1514,13 +1528,17 @@ class StockNet():
 
                 for stock in sort_code_list[code]:
                     if single == 1 or self.format_all is True:
-                        print stock
+                        if '出现大幅流入' in stock:
+                            stock = "\033[1;31m%s\033[0m" % stock
+                            print stock
+                        else:
+                            stock = "\033[1;32m%s\033[0m" % stock
+                            print stock
                 
                 if single == 1 or self.format_all is True:
                     print "_"*150
             except Exception as e:
                 print(e)
-                import pdb;pdb.set_trace()
                 continue
         print "\n"
 
