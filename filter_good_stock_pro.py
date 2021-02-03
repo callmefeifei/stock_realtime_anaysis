@@ -1086,7 +1086,7 @@ class StockNet():
                         rule6_list.append(i)
 
             # 最后按实时资金净流入排行, 获取top50
-            for i in sorted(self.now_stock_list, key=lambda x:x['jlr'], reverse=False):
+            for i in sorted(self.now_stock_list, key=lambda x:x['jlr'], reverse=True):
                 if len(rule6_list) >= 150:
                     break
                 else:
