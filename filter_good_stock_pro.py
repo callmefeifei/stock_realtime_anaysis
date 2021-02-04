@@ -2,6 +2,7 @@
 
 # 依赖库
 import os
+import re
 import sys
 import time
 import datetime
@@ -106,6 +107,10 @@ class StockNet():
         # 计数
         self.count = 0
 
+        # 大数据信息获取状态
+        self._anaylse_data_count = 0
+        self.anaylse_data_status = 0
+        self.anaylse_data_count = 0
         # 获取均线数据状态
         self._jx_data_count = 0
         self.jx_data_status = 0
@@ -134,6 +139,9 @@ class StockNet():
 
         # 异动统计
         self.yd_num_dict = {}
+
+        # 股市分析字典
+        self.stock_anaylse_dict = {}
 
     def notify(self, s_title, s_content, is_notify):
         try:
@@ -164,6 +172,16 @@ class StockNet():
     # 获取数据进度监控
     def status_monitor(self):
         while True:
+
+            # 获取分析数据状态监控
+            if self.anaylse_data_status == 0:
+                anaylse_data_status = '待开始'
+            elif self.anaylse_data_status == 1:
+                anaylse_data_status = '获取中'
+            elif self.anaylse_data_status == 2:
+                anaylse_data_status = '获取完毕'
+
+
             # 获取均线状态监控
             if self.jx_data_status == 0:
                 jx_data_status = '待开始'
@@ -188,6 +206,11 @@ class StockNet():
             elif self.ys_data_status == 2:
                 now_data_status = '获取完毕'
 
+            if self.anaylse_data_status != 0 and self.anaylse_data_status != 3:
+                print("[*] 分析数据获取任务状态 %s , 剩余数量:%s" % (anaylse_data_status, len(self.all_stock_code.keys())-self.anaylse_data_count))
+                if self.anaylse_data_status == 2:
+                    self.anaylse_data_status = 3
+
             if self.jx_data_status != 0 and self.jx_data_status != 3:
                 print("[*] 均线数据获取任务状态 %s , 剩余数量:%s" % (jx_data_status, len(self.all_stock_code.keys())-self.jx_data_count))
                 if self.jx_data_status == 2:
@@ -211,6 +234,167 @@ class StockNet():
                 break
 
             time.sleep(5)
+
+    def stock_anaylse(self, code):
+        try:
+            # T+1智能评分API
+            url = "http://quote.eastmoney.com/zixuan/api/znzg?code=%s" % code
+            result = self.ds.get(url, timeout=5).json()
+
+            # 主力成本计算API
+            zdf_url = "http://dcfm.eastmoney.com/em_mutisvcexpandinterface/api/js/get?type=QGQP_LB&CMD=%s&token=70f12f2f4f091e459a279469fe49eca5&callback=" % code
+            con = self.s.get(zdf_url, timeout=5).json()
+
+            name = con[0]['Name']                       # 股票名称
+            yestoday_zdf = con[0]['ChangePercent']      # 昨日涨跌幅
+            kpzt = con[0]['JGCYDType']                  # 控盘状态
+            zlcb = con[0]['ZLCB']                       # 主力成本
+            rankup = con[0]['RankingUp']                # 近期排行上升还是下降?
+            zljlr = float(con[0]['ZLJLR'])/10000                     # 主力净流入
+
+            # 更新时间
+            last_update = result['result']['UpdateTime']
+
+            # 参与意愿
+            cyyy = result['result']['ApiResults']['zj']['Market'][0]['scrd2']
+            cyyy_zdf = re.findall('-?\d+\.?\d*e?[-+]?\d*', cyyy)
+            if cyyy_zdf:
+                cyyy_zdf = cyyy_zdf[0]
+                if '上升' not in cyyy:
+                    cyyy_zdf = float(cyyy_zdf) / -1
+                else:
+                    cyyy_zdf = float(cyyy_zdf)
+            else:
+                cyyy_zdf = 0
+
+            # 平均盈亏
+            pjyk = result['result']['ApiResults']['zj']['Market'][0]['scrd3']
+            pjyk_zdf = re.findall('-?\d+\.?\d*e?[-+]?\d*', pjyk)
+            if pjyk_zdf:
+                pjyk_zdf = pjyk_zdf[0]
+                if '浮盈' not in pjyk:
+                    pjyk_zdf = float(pjyk_zdf) / -1
+                else:
+                    pjyk_zdf = float(pjyk_zdf)
+            else:
+                pjyk_zdf = 0
+
+            # 支撑位：26.12
+            zcw = result['result']['ApiResults']['zj']['Trend'][0][0]['SupportPosition']
+            # 压力位：30.48
+            ylw = result['result']['ApiResults']['zj']['Trend'][0][0]['PressurePosition']
+            # 综合评分：78
+            zhpf = result['result']['ApiResults']['zj']['Overall'][0]['TotalScore']
+            # 整体胜率：95.62
+            ztsl = result['result']['ApiResults']['zj']['Overall'][0]['LeadPre']
+            # 次日胜率：47.39
+            crsl = result['result']['ApiResults']['zj']['Overall'][0]['RisePro']
+            # 关注指数：90.4
+            gzzs = result['result']['ApiResults']['zj']['Market'][0]['FocusScore']
+            # 市场成本：28.91
+            sccb = result['result']['ApiResults']['zj']['Market'][0]['AvgBuyPrice']
+            # 市场排名：121
+            scpm = result['result']['ApiResults']['zj']['Market'][0]['Ranking']
+            # 今日表现：-0.79
+            jrbx = result['result']['ApiResults']['zj']['Overall'][0]['TotalScoreCHG']
+            # 成交活跃价格：29.37
+            try:
+                hyjg = result['result']['ApiResults']['zj']['Capital'][0]['ActivePrice']
+            except:
+                hyjg = 0
+            # 行业排名:19
+            hypm = result['result']['ApiResults']['zj']['Value'][0][0]['ValueRanking']
+            # 总结
+            summary =  result['result']['ApiResults']['zj']['Overall'][0]['Comment']
+
+            if code not in self.stock_anaylse_dict.keys():
+                self.stock_anaylse_dict[code] = {}
+                self.stock_anaylse_dict[code] = {
+                    "last_update":last_update,
+                    "name":name,
+                    "yestoday_zdf":yestoday_zdf,
+                    "kpzt":kpzt,
+                    "zlcb":zlcb,
+                    "zljlr":zljlr,
+                    "rankup":rankup,
+                    "cyyy_zdf":cyyy_zdf,
+                    "pjyk_zdf":pjyk_zdf,
+                    "SupportPosition":zcw,
+                    "PressurePosition":ylw,
+                    "TotalScore":zhpf,
+                    "LeadPre":ztsl,
+                    "RisePro":crsl,
+                    "FocusScore":gzzs,
+                    "AvgBuyPrice":sccb,
+                    "Ranking":scpm,
+                    "TotalScoreCHG":jrbx,
+                    "ActivePrice":hyjg,
+                    "ValueRanking":hypm,
+                    "summary":summary
+                }
+            else:
+                self.stock_anaylse_dict[code] = {
+                    "last_update":last_update,
+                    "name":name,
+                    "yestoday_zdf":yestoday_zdf,
+                    "kpzt":kpzt,
+                    "zlcb":zlcb,
+                    "zljlr":zljlr,
+                    "rankup":rankup,
+                    "cyyy_zdf":cyyy_zdf,
+                    "pjyk_zdf":pjyk_zdf,
+                    "SupportPosition":zcw,
+                    "PressurePosition":ylw,
+                    "TotalScore":zhpf,
+                    "LeadPre":ztsl,
+                    "RisePro":crsl,
+                    "FocusScore":gzzs,
+                    "AvgBuyPrice":sccb,
+                    "Ranking":scpm,
+                    "TotalScoreCHG":jrbx,
+                    "ActivePrice":hyjg,
+                    "ValueRanking":hypm,
+                    "summary":summary
+                }
+        except Exception as e:
+            msg = "[-][stock_anaylse] Error : %s %s" % (code, e)
+            if 'result' in str(e):
+                pass
+
+        self.anaylse_data_count += 1
+
+    def get_anaylse_data(self):
+        try:
+            # 先判断是否有当日本地缓存, 如果有直接加载
+            anaylse_cache_file="./cache/%s_anaylse.json" % str(time.strftime('%Y%m%d' , time.localtime()))
+            if not os.path.exists("./cache"):
+                os.makedirs("./cache/")
+
+            if os.path.exists(anaylse_cache_file):
+                with open(anaylse_cache_file, 'r') as f:
+                    cache = f.read()
+
+                print("[+] 发现当天缓存文件, 加载中请稍后...")
+                self.stock_anaylse_dict = json.loads(cache)
+
+            else:
+                # 如果没有, 则重新获取
+                p = Pool(300)
+                threads = []
+                # 获取分析数据
+                self.anaylse_data_status = 1
+                for i in self.all_stock_code:
+                    threads.append(p.spawn(self.stock_anaylse, self.all_stock_code[i]['code']))
+
+                self._anaylse_data_count = len(threads)
+                gevent.joinall(threads)
+
+                # 写入缓存
+                with open(anaylse_cache_file, 'a+') as f:
+                    f.write(json.dumps(self.stock_anaylse_dict))
+
+        except:
+            pass
 
     # 获取现价以及涨跌幅
     def fetch_now_changepercent(self, secid, code):
@@ -371,14 +555,14 @@ class StockNet():
                 content = "发现股票存在异动, 股票代码: %s[%s][%s][%s][%s万] | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs)
                 _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[code]['zdf_5d'])
 
-                is_continue_in = self.yd_count(code)
-
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
                     if '大幅流出' not in note:
                         if money_flow_bs >= 10:
+                            is_continue_in = self.yd_count(code)
                             self.notify("发现异动股票", content, True)
                         else:
+                            is_continue_in = self.yd_count(code)
                             self.notify("发现异动股票", content, self.is_notify)
 
                         # 持续流入
@@ -392,8 +576,10 @@ class StockNet():
                     else:
                         if '大幅流出' not in note:
                             if money_flow_bs >= 10:
+                                is_continue_in = self.yd_count(code)
                                 self.notify("发现异动股票", content, True)
                             else:
+                                is_continue_in = self.yd_count(code)
                                 self.notify("发现异动股票", content, self.is_notify)
 
                             # 持续流入
@@ -1691,6 +1877,12 @@ class StockNet():
         # > ----------------------------- * 获取股票代码列表&前缀 * -----------------------------
         # > ----------------------------- * 获取所有股票代码均线数据 * --------------------------
         self.get_all_code()
+
+        # 获取T+1日东方财富数据结果并缓存
+        self.get_anaylse_data()
+        self.anaylse_data_status = 2
+
+        import pdb;pdb.set_trace()
 
         # > ----------------------------- * 获取均线数据方法 * --------------------------
         self.get_jx_data()
