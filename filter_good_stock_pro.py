@@ -132,10 +132,13 @@ class StockNet():
         # 交易结束信号
         self.close_signal = False
 
-    def notify(self, s_title, s_content):
+        # 异动统计
+        self.yd_num_dict = {}
+
+    def notify(self, s_title, s_content, is_notify):
         try:
-            if self.is_notify:
-                s_title = "股票异动提醒"
+            if is_notify:
+                s_title = s_title
                 api_url = 'https://api.ossec.cn/v1/send?token=%s' % self.wx_token
                 api_url += '&topic=%s&message=%s' % (s_title, s_content)
                 response  = self.s.get(api_url, timeout=60)
@@ -259,6 +262,31 @@ class StockNet():
 
         return money_flow_bs
 
+    # 计数器
+    def yd_count(self, code):
+        # 180s(3分钟)内出现3次+大幅流入, 则告警
+
+        ntime = int(time.time())
+        if code in self.yd_num_dict.keys():
+            print code, self.yd_num_dict[code]
+            # 首先查看上次记录截止目前是否过期(180s)
+            if ntime - self.yd_num_dict[code][0] >= 180:
+                self.yd_num_dict[code][0] = ntime
+                self.yd_num_dict[code][1] = 1
+                return False
+            else:
+                n_count = self.yd_num_dict[code][1]
+                n_count += 1
+                self.yd_num_dict[code][1] = n_count
+                if n_count >= 3:
+                    return True
+                else:
+                    return False
+
+        else:
+            self.yd_num_dict[code] = [ntime, 1]
+            return False
+
     # 获取资金流量方法
     def fetch_money_flow(self, code, rule_type):
         try:
@@ -343,17 +371,35 @@ class StockNet():
                 content = "发现股票存在异动, 股票代码: %s[%s][%s][%s][%s万] | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %s"  % (code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs)
                 _content = "[*][%s][%s][%s][现价:%s][涨跌幅:%s][净流入:%.2f万] 发现异动 | 命中规则: %s | 信号: %s | 与上分钟比资金倍数: %.2f | jlr_5days: %.2f | zdf_5days: %.2f"  % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, name, now_trade, now_changepercent, in_money_2/10000, rule_type, note, money_flow_bs, self.yestoday_stock_dict[code]['jlr_5days'], self.now_stock_dict[code]['zdf_5d'])
 
+                is_continue_in = self.yd_count(code)
+
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
                     if '大幅流出' not in note:
-                        self.notify("发现异动股票", content)
+                        if money_flow_bs >= 10:
+                            self.notify("发现异动股票", content, True)
+                        else:
+                            self.notify("发现异动股票", content, self.is_notify)
+
+                        # 持续流入
+                        if is_continue_in:
+                            self.notify("股票正在持续流入", content, True)
+
                     self.alarm_db[code] = {in_money_2:True}
                 else:
                     if in_money_2 in self.alarm_db[code].keys():
                         pass
                     else:
                         if '大幅流出' not in note:
-                            self.notify("发现异动股票", content)
+                            if money_flow_bs >= 10:
+                                self.notify("发现异动股票", content, True)
+                            else:
+                                self.notify("发现异动股票", content, self.is_notify)
+
+                            # 持续流入
+                            if is_continue_in:
+                                self.notify("股票正在持续流入", content, True)
+
                         self.alarm_db[code] = {in_money_2:True}
 
                 # 记录结果到本地
