@@ -224,6 +224,8 @@ class StockNet():
 
     # 资金流入方法计算
     def money_flow_calc(self, in_money_1, in_money_2):
+        money_flow_bs = 1.0
+
         # 都为净流出
         if float(in_money_2) < 0 and float(in_money_1) < 0:
             # 流入
@@ -1569,6 +1571,7 @@ class StockNet():
                 os.system("clear")
         else:
             self.format_func(result_file)
+            sys.exit()
 
     def add2zx_func(self, result_file, gid):
         with open(result_file, 'r') as f:
