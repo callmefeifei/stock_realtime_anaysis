@@ -1833,7 +1833,7 @@ class StockNet():
                             )
 
                             # 第二行: 涨跌状况
-                            msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;32m%s\033[0m, 流出倍数:%s" % (
+                            msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;32m%s\033[0m, 流出倍数:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     now_trade, \
@@ -1849,6 +1849,9 @@ class StockNet():
                                                                                                                     note, \
                                                                                                                     now_money_flow_bs
                             )
+                            msg += "[%s][%s][基本面] %s\n" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['value_summary'])
+                            msg += "[%s][%s][资金面] %s" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['summary'])
+
                             """
                             msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%s万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
                                                                                                                     code, \
@@ -1892,7 +1895,7 @@ class StockNet():
                             )
 
                             # 第二行: 涨跌状况
-                            msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
+                            msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;31m%s\033[0m, 增长倍数:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     now_trade, \
@@ -1908,6 +1911,9 @@ class StockNet():
                                                                                                                     note, \
                                                                                                                     now_money_flow_bs
                             )
+                            msg += "[%s][%s][基本面] %s\n" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['value_summary'])
+                            msg += "[%s][%s][资金面] %s" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['summary'])
+
                             """
                             msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%s万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
                                                                                                                     code, \
