@@ -2016,6 +2016,27 @@ class StockNet():
                 continue
 
         for code in sort_code_list.keys():
+            fst_jlr = float(sort_code_list[code][0].split("[")[7].split("]")[0].split(":")[1].strip('万'))
+
+            if float(self.now_format_stock_dict[code]['jlr']) < 0:
+                if fst_jlr > 0:
+                    note = '流出状态'
+                    single = 0
+                else:
+                    if abs(float(self.now_format_stock_dict[code]['jlr'])) > fst_jlr:
+                        note = '流出状态'
+                        single = 0
+                    else:
+                        note = '流入状态'
+                        single = 1
+            else:
+                if float(self.now_format_stock_dict[code]['jlr']) > fst_jlr:
+                    note = "流入状态"
+                    single = 1
+                else:
+                    note = "流出状态"
+                    single = 0
+
             if code.startswith("300") or code.startswith("00"):
                 secid = 0
             elif code.startswith("68"):
@@ -2023,13 +2044,21 @@ class StockNet():
             else:
                 secid = 1
 
-            url = "http://myfavor.eastmoney.com/v4/webouter/as?appkey=%s&cb=&g=%s&sc=%s$%s&_=1612340046932" % (self.appkey, gid, secid, code)
-            print self.ds.get(url, timeout=10).text
+            if single == 1:
+                url = "http://myfavor.eastmoney.com/v4/webouter/as?appkey=%s&cb=&g=%s&sc=%s$%s&_=1612340046932" % (self.appkey, gid, secid, code)
+                print self.ds.get(url, timeout=10).text
 
     def add2zx(self, result_file):
         if not os.path.exists(result_file):
             print("[-] File not found!")
             parser.print_help()
+
+
+        # 第二步、加载数据分析缓存文件
+        self.get_anaylse_data()
+
+        # 第三步、获取所有股票实时净流入等信息
+        self.format_realtime_data()
 
         # 首先返回组列表
         _ginfolist = self.ginfolist()
