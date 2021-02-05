@@ -1353,20 +1353,21 @@ class StockNet():
         # - 质地很差 不入库
         try:
             if float(self.stock_anaylse_dict[code]['TotalScore']) < 70:
-                return
+                return False
             if float(self.stock_anaylse_dict[code]['FocusScore']) < 60:
-                return
+                return False
             if float(self.stock_anaylse_dict[code]['RisePro']) < 45:
-                return
+                return False
             if float(self.stock_anaylse_dict[code]['LeadPre']) < 60:
-                return
+                return False
             if '明显流出' in self.stock_anaylse_dict[code]['summary']:
-                return
+                return False
             if '质地很差' in self.stock_anaylse_dict[code]['value_summary']:
-                return
+                return False
             self.rule_matched_list[rule].append(code)
+            return True
         except:
-            pass
+            return False
 
     # 通过规则筛选需要股票
     def rule_filter(self):
@@ -1448,7 +1449,9 @@ class StockNet():
                 content = "[%s][%s][rule6][%s][%s][zlrank:%s][score:%s][rank:%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近期涨跌幅(5/10):%s/%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], self.now_stock_dict[code]['zlrank_today'],self.now_stock_dict[code]['score'],self.now_stock_dict[code]['rank'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.now_stock_dict[code]['zdf_10d'])
                 if code not in self.rule_matched_list['rule6']:
                     self.add2matched("rule6", code)
-                self.write_result("rule6", content)
+
+                if code in self.rule_matched_list["rule6"]:
+                    self.write_result("rule6", content)
 
         except Exception as e2:
             print e2
@@ -1482,7 +1485,8 @@ class StockNet():
                         content = "[%s][%s][rule5][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                         if code not in self.rule_matched_list['rule5']:
                             self.add2matched("rule5", code)
-                        self.write_result("rule5", content)
+                        if code in self.rule_matched_list["rule5"]:
+                            self.write_result("rule5", content)
                     else:
                         continue
                 except Exception as e1:
@@ -1511,7 +1515,8 @@ class StockNet():
                         if code not in self.rule_matched_list['rule1']:
                             self.add2matched("rule1", code)
 
-                        self.write_result("rule1", content)
+                        if code in self.rule_matched_list["rule1"]:
+                            self.write_result("rule1", content)
 
                 # rule2:昨日净流出, 今日净流出.
                 if jlr < 0 and zdf <= 0:
@@ -1524,7 +1529,8 @@ class StockNet():
                             if code not in self.rule_matched_list['rule2']:
                                 self.add2matched("rule2", code)
 
-                            self.write_result("rule2", content)
+                            if code in self.rule_matched_list["rule2"]:
+                                self.write_result("rule2", content)
 
                 # rule3:今日首次净流入且涨, 前两天均净流出且跌.
                 if self.now_stock_dict[stock]['jlr'] > 0 and self.now_stock_dict[stock]['zdf'] > 0 \
@@ -1541,7 +1547,8 @@ class StockNet():
                     if code not in self.rule_matched_list['rule3']:
                         self.add2matched("rule3", code)
 
-                    self.write_result("rule3", content)
+                    if code in self.rule_matched_list["rule3"]:
+                        self.write_result("rule3", content)
 
                 # rule4:刚突破ma5->ma10<ma20
                 # 1. 当前涨跌幅>0
@@ -1561,7 +1568,9 @@ class StockNet():
                     if code not in self.rule_matched_list['rule4']:
                         self.add2matched("rule4", code)
 
-                    self.write_result("rule4", content)
+                    if code in self.rule_matched_list["rule4"]:
+                        self.write_result("rule4", content)
+
             except Exception as e:
                 try:
                     # 如果是int，则不告警
