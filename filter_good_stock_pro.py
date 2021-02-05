@@ -1345,9 +1345,28 @@ class StockNet():
     # 将匹配到的股票加入到规则列表
     # --- 同时进行二次判断 ---
     def add2matched(self, rule, code):
-        # 如果小于70分，不入库.
-        # 如果市场关注度xxx，不入库.
-        self.rule_matched_list[rule].append(code)
+        # - 如果小于70分，不入库.
+        # - 如果市场关注度< 60   ，不入库.
+        # - 上涨概率<45 不入库
+        # - 市场平均表现 < 60 不入库
+        # - 明显流出 不入库
+        # - 质地很差 不入库
+        try:
+            if float(self.stock_anaylse_dict[code]['TotalScore']) < 70:
+                return
+            if float(self.stock_anaylse_dict[code]['FocusScore']) < 60:
+                return
+            if float(self.stock_anaylse_dict[code]['RisePro']) < 45:
+                return
+            if float(self.stock_anaylse_dict[code]['LeadPre']) < 60:
+                return
+            if '明显流出' in self.stock_anaylse_dict[code]['summary']:
+                return
+            if '质地很差' in self.stock_anaylse_dict[code]['value_summary']:
+                return
+            self.rule_matched_list[rule].append(code)
+        except:
+            pass
 
     # 通过规则筛选需要股票
     def rule_filter(self):
