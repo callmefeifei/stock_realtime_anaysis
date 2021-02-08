@@ -1858,15 +1858,15 @@ class StockNet():
 
                         # 资金动向
                         if self.now_format_stock_dict[code]['zjdx1'] == 1:
-                            zjdx1 = "\033[1;31m增仓\033[0m" % self.now_format_stock_dict[code]['zjdx1']
+                            zjdx1 = "\033[1;31m增仓\033[0m"
                         elif self.now_format_stock_dict[code]['zjdx1'] == 0:
-                            zjdx1 = "\033[1;34m减仓\033[0m" % self.now_format_stock_dict[code]['zjdx1']
+                            zjdx1 = "\033[1;34m减仓\033[0m"
                         else:
                             zjdx1 = "中立"
 
                         if '流出' in note:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s \n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     self.now_format_stock_dict[code]['score'], \
@@ -1929,7 +1929,7 @@ class StockNet():
                             """
                         else:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s \n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     self.now_format_stock_dict[code]['score'], \
@@ -1990,7 +1990,6 @@ class StockNet():
                         print msg
                         print "-"*150
                 else:
-                    import pdb;pdb.set_trace()
                     print code
 
                 for stock in sort_code_list[code]:
@@ -2006,6 +2005,7 @@ class StockNet():
                     print "_"*150
             except Exception as e:
                 print(e)
+                import pdb;pdb.set_trace()
                 continue
         print "\n"
 
