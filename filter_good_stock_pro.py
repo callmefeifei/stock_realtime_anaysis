@@ -1653,6 +1653,7 @@ class StockNet():
                 self.now_format_stock_dict[code]['name'] = self.stock_anaylse_dict[code]['name']                    # 股票名称
                 self.now_format_stock_dict[code]['kpType'] = self.stock_anaylse_dict[code]['kpzt']                  # 控盘情况
                 self.now_format_stock_dict[code]['zlcb'] = self.stock_anaylse_dict[code]['zlcb']                    # 主力成本
+                self.now_format_stock_dict[code]['zjdx1'] = self.stock_anaylse_dict[code]['zjdx1']                  # 主力资金流入状态
                 self.now_format_stock_dict[code]['score'] = self.stock_anaylse_dict[code]['TotalScore']             # 得分
                 self.now_format_stock_dict[code]['rank'] = self.stock_anaylse_dict[code]['Ranking']                 # 排名
                 self.now_format_stock_dict[code]['zl_ma20'] = self.stock_anaylse_dict[code]['zl_ma20']              # 主力成本60日线
