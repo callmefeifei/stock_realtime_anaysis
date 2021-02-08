@@ -280,6 +280,14 @@ class StockNet():
             # DDX
             ddx5 = result['result']['ApiResults']['zj']['Capital'][0]['DDX5']
 
+            # 主力动向
+            if '增仓' in result['result']['ApiResults']['zj']['Capital'][0]['zjdx1']:
+                zjdx1 = 1 # 增仓
+            elif '减仓' in result['result']['ApiResults']['zj']['Capital'][0]['zjdx1']:
+                zjdx1 = 0 # 减仓
+            else:
+                zjdx1 = 2 # 中立
+
             # 参与意愿
             cyyy = result['result']['ApiResults']['zj']['Market'][0]['scrd2']
             cyyy_zdf = re.findall('-?\d+\.?\d*e?[-+]?\d*', cyyy)
@@ -343,6 +351,7 @@ class StockNet():
                     "ddx5":ddx5,
                     "kpzt":kpzt,
                     "zlcb":zlcb,
+                    "zjdx1":zjdx1,
                     "zl_ma20":zl_ma20,
                     "zl_ma60":zl_ma60,
                     "zljlr":zljlr,
@@ -371,6 +380,7 @@ class StockNet():
                     "ddx5":ddx5,
                     "kpzt":kpzt,
                     "zlcb":zlcb,
+                    "zjdx1":zjdx1,
                     "zl_ma20":zl_ma20,
                     "zl_ma60":zl_ma60,
                     "zljlr":zljlr,
@@ -429,7 +439,6 @@ class StockNet():
                 # 写入缓存
                 with open(anaylse_cache_file, 'a+') as f:
                     f.write(json.dumps(self.stock_anaylse_dict))
-
         except:
             pass
 
@@ -1165,6 +1174,7 @@ class StockNet():
             focus = self.stock_anaylse_dict[code]['FocusScore']             # 关注度
             kpzt = self.stock_anaylse_dict[code]['kpzt']                    # 控盘状态
             zlcb = self.stock_anaylse_dict[code]['zlcb']                    # 主力成本
+            zjdx1 = self.stock_anaylse_dict[code]['zjdx1']                  # 主力资金动向
             rankup = self.stock_anaylse_dict[code]['rankup']                # 近期排行上升还是下降?
             summary = self.stock_anaylse_dict[code]['summary']              # 总结
             value_summary = self.stock_anaylse_dict[code]['value_summary']  # 价值总结
@@ -1187,6 +1197,7 @@ class StockNet():
                 self.now_stock_dict[code]['focus'] = focus
                 self.now_stock_dict[code]['kpzt'] = kpzt
                 self.now_stock_dict[code]['zlcb'] = zlcb
+                self.now_stock_dict[code]['zjdx1'] = zjdx1
                 self.now_stock_dict[code]['rankup'] = rankup
                 self.now_stock_dict[code]['summary'] = summary
                 self.now_stock_dict[code]['summary'] = value_summary
@@ -1209,6 +1220,7 @@ class StockNet():
                 self.now_stock_dict[code]['focus'] = focus
                 self.now_stock_dict[code]['kpzt'] = kpzt
                 self.now_stock_dict[code]['zlcb'] = zlcb
+                self.now_stock_dict[code]['zjdx1'] = zjdx1
                 self.now_stock_dict[code]['rankup'] = rankup
                 self.now_stock_dict[code]['summary'] = summary
                 self.now_stock_dict[code]['summary'] = value_summary
@@ -1843,9 +1855,17 @@ class StockNet():
                         else:
                             zlrank_today = self.now_format_stock_dict[code]['zlrank_today']
 
+                        # 资金动向
+                        if self.now_format_stock_dict[code]['zjdx1'] == 1:
+                            zjdx1 = "\033[1;31m增仓\033[0m" % self.now_format_stock_dict[code]['zjdx1']
+                        elif self.now_format_stock_dict[code]['zjdx1'] == 0:
+                            zjdx1 = "\033[1;34m减仓\033[0m" % self.now_format_stock_dict[code]['zjdx1']
+                        else:
+                            zjdx1 = "中立"
+
                         if '流出' in note:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s\n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s \n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     self.now_format_stock_dict[code]['score'], \
@@ -1856,7 +1876,8 @@ class StockNet():
                                                                                                                     self.now_format_stock_dict[code]['focus'], \
                                                                                                                     self.now_format_stock_dict[code]['cyyy'], \
                                                                                                                     self.now_format_stock_dict[code]['pjyk'], \
-                                                                                                                    self.now_format_stock_dict[code]['kpType']
+                                                                                                                    self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                    zjdx1
 
                             )
 
@@ -1907,7 +1928,7 @@ class StockNet():
                             """
                         else:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s\n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s \n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     self.now_format_stock_dict[code]['score'], \
@@ -1918,7 +1939,8 @@ class StockNet():
                                                                                                                     self.now_format_stock_dict[code]['focus'], \
                                                                                                                     self.now_format_stock_dict[code]['cyyy'], \
                                                                                                                     self.now_format_stock_dict[code]['pjyk'], \
-                                                                                                                    self.now_format_stock_dict[code]['kpType']
+                                                                                                                    self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                    zjdx1
 
                             )
 
@@ -1967,6 +1989,7 @@ class StockNet():
                         print msg
                         print "-"*150
                 else:
+                    import pdb;pdb.set_trace()
                     print code
 
                 for stock in sort_code_list[code]:
