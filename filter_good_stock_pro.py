@@ -7,6 +7,7 @@ import sys
 import time
 import datetime
 import json
+import urllib
 import requests
 import threading
 import ConfigParser
@@ -146,14 +147,20 @@ class StockNet():
         # 股票池
         self.stock_pool = {}
 
-    def notify(self, s_title, s_content, is_notify):
+    def notify(self, s_title, s_content, is_notify, stock_url=None):
         try:
             if is_notify:
                 s_title = s_title
                 api_url = 'https://api.ossec.cn/v1/send?token=%s' % self.wx_token
-                api_url += '&topic=%s&message=%s' % (s_title, s_content)
+                if stock_url:
+                    stock_url = "https://wzq.tenpay.com/mp/v2/index.html?stat_data=orv53p00gf001#/trade/stock_detail.shtml?scode=%s&type=0&holder=&frombroker=&remindtype=choose" %  stock_url
+                    stock_url = urllib.quote(stock_url)
+                    api_url += '&topic=%s&message=%s&url=%s' % (s_title, s_content, stock_url)
+                else:
+                    api_url += '&topic=%s&message=%s' % (s_title, s_content)
                 response  = self.s.get(api_url, timeout=60)
-        except:
+        except Exception as e:
+            print(e)
             pass
 
     # 结果保存
@@ -618,14 +625,14 @@ class StockNet():
                     if '大幅流出' not in note:
                         if money_flow_bs >= 10:
                             is_continue_in = self.yd_count(code)
-                            self.notify("发现异动股票", content, True)
+                            self.notify("发现异动股票", content, True, code)
                         else:
                             is_continue_in = self.yd_count(code)
-                            self.notify("发现异动股票", content, self.is_notify)
+                            self.notify("发现异动股票", content, self.is_notify, code)
 
                         # 持续流入
                         if is_continue_in:
-                            self.notify("股票正在持续流入", content, True)
+                            self.notify("股票正在持续流入", content, True, code)
 
                     self.alarm_db[code] = {in_money_2:True}
                 else:
@@ -635,14 +642,14 @@ class StockNet():
                         if '大幅流出' not in note:
                             if money_flow_bs >= 10:
                                 is_continue_in = self.yd_count(code)
-                                self.notify("发现异动股票", content, True)
+                                self.notify("发现异动股票", content, True, code)
                             else:
                                 is_continue_in = self.yd_count(code)
-                                self.notify("发现异动股票", content, self.is_notify)
+                                self.notify("发现异动股票", content, self.is_notify, code)
 
                             # 持续流入
                             if is_continue_in:
-                                self.notify("股票正在持续流入", content, True)
+                                self.notify("股票正在持续流入", content, True, code)
 
                         self.alarm_db[code] = {in_money_2:True}
 
@@ -1797,10 +1804,18 @@ class StockNet():
                             score = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['score']
 
                         # 排名
-                        if self.now_format_stock_dict[code]['rank'] > 200:
+                        if float(self.now_format_stock_dict[code]['rank']) > 200:
                             rank = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['rank']
                         else:
                             rank = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['rank']
+
+                        # 排名增长
+                        if self.now_format_stock_dict[code]['rankup'] == '-':
+                            pass
+                        elif float(self.now_format_stock_dict[code]['rankup']) < 0:
+                            rankup = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['rankup']                            
+                        else:
+                            rankup = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['rankup']
 
                         # 主力成本20日与60日涨跌幅
                         try:
@@ -1860,23 +1875,53 @@ class StockNet():
                         if self.now_format_stock_dict[code]['zjdx1'] == 1:
                             zjdx1 = "\033[1;31m增仓\033[0m"
                         elif self.now_format_stock_dict[code]['zjdx1'] == 0:
-                            zjdx1 = "\033[1;34m减仓\033[0m"
+                            zjdx1 = "\033[1;32m减仓\033[0m"
                         else:
                             zjdx1 = "中立"
 
+                        # 今日打败
+                        if float(self.now_format_stock_dict[code]['drbx']) >= 95:
+                            drbx = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['drbx'])
+                        else:
+                            drbx = float(self.now_format_stock_dict[code]['drbx'])
+
+                        # 上涨概率
+                        if float(self.now_format_stock_dict[code]['crsl']) >= 48:
+                            crsl = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['crsl'])
+                        else:
+                            crsl = "%.2f" % float(self.now_format_stock_dict[code]['crsl'])
+
+                        # 市场关注度
+                        if self.now_format_stock_dict[code]['focus'] >= 85:
+                            focus = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['focus'])
+                        else:
+                            focus = "%.2f" % float(self.now_format_stock_dict[code]['focus'])
+
+                        # 参与意愿
+                        if self.now_format_stock_dict[code]['cyyy'] > 0:
+                            cyyy = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['cyyy'])
+                        else:
+                            cyyy = "%.2f" % float(self.now_format_stock_dict[code]['cyyy'])
+
+                        # 平均盈亏
+                        if self.now_format_stock_dict[code]['pjyk'] <= 0:
+                            pjyk = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['pjyk'])
+                        else:
+                            pjyk = "%.2f" % self.now_format_stock_dict[code]['pjyk']
+
                         if '流出' in note:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
-                                                                                                                    self.now_format_stock_dict[code]['score'], \
-                                                                                                                    self.now_format_stock_dict[code]['rank'], \
-                                                                                                                    self.now_format_stock_dict[code]['rankup'], \
-                                                                                                                    float(self.now_format_stock_dict[code]['drbx']), \
-                                                                                                                    float(self.now_format_stock_dict[code]['crsl']), \
-                                                                                                                    self.now_format_stock_dict[code]['focus'], \
-                                                                                                                    self.now_format_stock_dict[code]['cyyy'], \
-                                                                                                                    self.now_format_stock_dict[code]['pjyk'], \
+                                                                                                                    score, \
+                                                                                                                    rank, \
+                                                                                                                    rankup, \
+                                                                                                                    drbx, \
+                                                                                                                    crsl, \
+                                                                                                                    focus, \
+                                                                                                                    cyyy, \
+                                                                                                                    pjyk, \
                                                                                                                     self.now_format_stock_dict[code]['kpType'], \
                                                                                                                     zjdx1
 
@@ -1929,17 +1974,17 @@ class StockNet():
                             """
                         else:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %.2f 的股票, 今日上涨概率:%.2f , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
-                                                                                                                    self.now_format_stock_dict[code]['score'], \
-                                                                                                                    self.now_format_stock_dict[code]['rank'], \
-                                                                                                                    self.now_format_stock_dict[code]['rankup'], \
-                                                                                                                    float(self.now_format_stock_dict[code]['drbx']), \
-                                                                                                                    float(self.now_format_stock_dict[code]['crsl']), \
-                                                                                                                    self.now_format_stock_dict[code]['focus'], \
-                                                                                                                    self.now_format_stock_dict[code]['cyyy'], \
-                                                                                                                    self.now_format_stock_dict[code]['pjyk'], \
+                                                                                                                    score, \
+                                                                                                                    rank, \
+                                                                                                                    rankup, \
+                                                                                                                    drbx, \
+                                                                                                                    crsl, \
+                                                                                                                    focus, \
+                                                                                                                    cyyy, \
+                                                                                                                    pjyk, \
                                                                                                                     self.now_format_stock_dict[code]['kpType'], \
                                                                                                                     zjdx1
 
@@ -2002,7 +2047,8 @@ class StockNet():
                             print stock
                 
                 if single == 1 or self.format_all is True:
-                    print "_"*150
+                    line = "\033[1;31m_\033[0m"
+                    print line*150
             except Exception as e:
                 print(e)
                 import pdb;pdb.set_trace()
@@ -2204,6 +2250,8 @@ class StockNet():
         else:
             parser = OptionParser()
 
+            parser.add_option("--code", dest="code", default=False, help=u"查看指定股票, --code 000001")
+
             parser.add_option("--format_result", dest="format_result", default=False, help=u"查看结果, --format_result result/20210129_money_flow.txt")
 
             parser.add_option("--add2zx", dest="add2zx", default=False, help=u"添加到东方财富自选, --add2zx result/2021-02-03/20210129_money_flow.txt")
@@ -2231,10 +2279,9 @@ class StockNet():
 
                     self.format_result(result_file, parser)
 
-                if options.add2zx:
+                elif options.add2zx:
                     result_file = options.add2zx
                     self.add2zx(result_file)
-
                 else:
                     self.work()
 
