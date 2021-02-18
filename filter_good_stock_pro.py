@@ -73,6 +73,7 @@ class StockNet():
         # 自选股
         self.is_zxg_monitor = is_zxg_monitor
         self.zxg_list = zxg_list
+        self.first_zxg_add = True
 
         # 告警token
         self.wx_token = token
@@ -2107,13 +2108,19 @@ class StockNet():
                 n_count = "\033[1;37m%s\033[0m" % str(len(self.now_stock_dict.keys()))
                 print("[%s][%s] 今日数据收集完毕, 共收集出 %s 条股票信息." % (fh, ntime, n_count))
 
-            # 获取当日数据结束
-            self.now_data_status = 2
-
             # 将当前自选加入监控列表
             if self.is_zxg_monitor:
-                for code in self.zxg_list:
-                    sn.rule_matched_list['rule1'].append(code)
+                if self.first_zxg_add:
+                    for code in self.zxg_list:
+                        sn.rule_matched_list['rule1'].append(code)
+
+                    self.first_zxg_add = False
+
+                    # 执行一次
+                    self.monitor_money_flow()
+
+            # 获取当日数据结束
+            self.now_data_status = 2
 
             # > ----------------------------- * 过滤规则 * --------------------------
             self.rule_filter()
