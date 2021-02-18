@@ -1357,6 +1357,23 @@ class StockNet():
                 if code in self.rule_matched_list["rule6"]:
                     self.write_result("rule6", content)
 
+            # 自选股
+            if self.is_zxg_monitor:
+                for code in self.zxg_list:
+                    stock = code
+                    name = 'unkonw'
+                    zdf = self.yestoday_stock_dict[code]['zdf']
+                    jlr = self.yestoday_stock_dict[code]['jlr']
+                    fh = "\033[1;37m+\033[0m"
+                    content = "[%s][%s][rule6][%s][%s][zlrank:%s][score:%s][rank:%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近期涨跌幅(5/10):%s/%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], self.now_stock_dict[code]['zlrank_today'],self.now_stock_dict[code]['score'],self.now_stock_dict[code]['rank'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.now_stock_dict[code]['zdf_10d'])
+
+                    if code not in self.rule_matched_list['rule1']:
+                        self.add2matched("rule1", code)
+
+                        self.rule_matched_list['rule1'].append(code)
+
+                    import pdb;pdb.set_trace()
+
         except Exception as e2:
             print e2
             pass
@@ -2116,7 +2133,7 @@ class StockNet():
                 if self.first_zxg_add:
                     for code in self.zxg_list:
                         sn.rule_matched_list['rule1'].append(code)
-                        
+
                         self.first_zxg_add = False
 
                     # 执行一次
