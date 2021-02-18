@@ -670,7 +670,6 @@ class StockNet():
                 pass
             else:
                 print("[-] 获取获取资金流量方法失败!! errcode:100205, errmsg:%s" % e)
-                import pdb;pdb.set_trace()
 
     def monitor_money_flow(self):
         # 循环监控
