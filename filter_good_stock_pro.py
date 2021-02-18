@@ -47,7 +47,7 @@ cat result/20210121_rule4.txt |sort -t $':' -k7 -nr
 """
 
 class StockNet():
-    def __init__(self, token=None, is_limit=False, limit_num=100, is_notify=False, cookie="", appkey=""):
+    def __init__(self, token=None, is_limit=False, limit_num=100, is_notify=False, is_zxg_monitor=False, zxg_list=[], cookie="", appkey=""):
         # 重试请求方法
         self.headers = {
             "Referer":"http://data.eastmoney.com/",
@@ -69,6 +69,10 @@ class StockNet():
         }
         self.ds.headers.update(self.ds_headers)
         self.appkey = appkey
+
+        # 自选股
+        self.is_zxg_monitor = is_zxg_monitor
+        self.zxg_list = zxg_list
 
         # 告警token
         self.wx_token = token
@@ -665,6 +669,7 @@ class StockNet():
                 pass
             else:
                 print("[-] 获取获取资金流量方法失败!! errcode:100205, errmsg:%s" % e)
+                import pdb;pdb.set_trace()
 
     def monitor_money_flow(self):
         # 循环监控
@@ -1047,131 +1052,6 @@ class StockNet():
         except Exception as e:
             print("[-] 获取昨日股票收盘数据失败!! errcode:100204, errmsg:%s" % e)
             return
-
-    def format_now_stock(self, code):
-
-
-        """
-        try:
-            # 净流入
-            con = self.s.get(url, timeout=10).json()
-            jlr = float(con['data']['klines'][0])/10000
-
-            if code not in self.now_format_stock_dict.keys():
-                self.now_format_stock_dict[code] = {}
-                self.now_format_stock_dict[code]['jlr'] = jlr
-            else:
-                self.now_format_stock_dict[code]['jlr'] = jlr
-        except Exception as e:
-            #print(url, e)
-            pass
-
-        # 主力成本、排名、得分、控盘形态、最新价格、最新涨跌幅
-        try:
-            # 净流入
-            con = self.s.get(url2, timeout=10).json()
-
-            name = con[0]['Name']
-            zdf = con[0]['ChangePercent']
-            trade = con[0]['New']
-            kpType = con[0]['JGCYDType']
-            zlcb = con[0]['ZLCB']
-            score = con[0]['TotalScore']
-            rank = con[0]['Ranking']
-            zl_ma20 = con[0]['ZLCB20R']
-            zl_ma60 = con[0]['ZLCB60R']
-
-            if code not in self.now_format_stock_dict.keys():
-                self.now_format_stock_dict[code] = {}
-                self.now_format_stock_dict[code]['name'] = name
-                self.now_format_stock_dict[code]['zdf'] = zdf
-                self.now_format_stock_dict[code]['trade'] = trade
-                self.now_format_stock_dict[code]['kpType'] = kpType
-                self.now_format_stock_dict[code]['zlcb'] = zlcb
-                self.now_format_stock_dict[code]['score'] = score
-                self.now_format_stock_dict[code]['rank'] = rank
-                self.now_format_stock_dict[code]['zl_ma20'] = zl_ma20
-                self.now_format_stock_dict[code]['zl_ma60'] = zl_ma60
-
-
-            else:
-                self.now_format_stock_dict[code]['name'] = name
-                self.now_format_stock_dict[code]['zdf'] = zdf
-                self.now_format_stock_dict[code]['trade'] = trade
-                self.now_format_stock_dict[code]['kpType'] = kpType
-                self.now_format_stock_dict[code]['zlcb'] = zlcb
-                self.now_format_stock_dict[code]['score'] = score
-                self.now_format_stock_dict[code]['rank'] = rank
-                self.now_format_stock_dict[code]['zl_ma20'] = zl_ma20
-                self.now_format_stock_dict[code]['zl_ma60'] = zl_ma60
-
-        except Exception as e:
-            self.now_format_stock_dict[code]['name'] = "xxxx"
-            self.now_format_stock_dict[code]['zdf'] = 0
-            self.now_format_stock_dict[code]['trade'] = 0
-            self.now_format_stock_dict[code]['kpType'] = 0
-            self.now_format_stock_dict[code]['zlcb'] = 0
-            self.now_format_stock_dict[code]['score'] = 0
-            self.now_format_stock_dict[code]['rank'] = 0
-            self.now_format_stock_dict[code]['zl_ma20'] = 0
-            self.now_format_stock_dict[code]['zl_ma60'] = 0
-
-
-        # 获取当日股票数据(所属行业、主力实时排名)
-        try:
-            url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f184&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&fields=f2,f3,f12,f13,f14,f62,f184,f225,f165,f263,f109,f175,f264,f160,f100,f124,f265&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2"
-            data = self.s.get(url, timeout=10).json()['data']['diff']
-            for stock in data:
-                try:
-                    code = stock['f12']                 # 股票代码
-                    industry = stock['f100']            # 所属行业
-                    zlrank_today = stock['f225']        # 今日排名
-                    zlrank_5d = stock['f263']           # 五日主力排名
-                    zdf_5d = stock['f109']              # 近五日涨跌幅
-                    zlrannk_10d = stock['f264']         # 十日主力排名
-                    zdf_10d = stock['f160']             # 近十日涨跌幅
-
-                    if code in self.now_format_stock_dict.keys():
-                        self.now_format_stock_dict[code]['industry'] = industry
-                        self.now_format_stock_dict[code]['zlrank_today'] = zlrank_today
-                        self.now_format_stock_dict[code]['zlrank_5d'] = zlrank_5d
-                        self.now_format_stock_dict[code]['zdf_5d'] = zdf_5d
-                        self.now_format_stock_dict[code]['zlrannk_10d'] = zlrannk_10d
-                        self.now_format_stock_dict[code]['zdf_10d'] = zdf_10d
-                except:
-                    continue
-        except:
-            pass
-
-        try:
-            # 获取当日股票数据(最新价、涨跌幅、资金资金实时流入情况)
-            url = "http://push2.eastmoney.com/api/qt/clist/get?cb=&fid=f62&po=1&pz=5000&pn=1&np=1&fltt=2&invt=2&ut=b2884a393a59ad64002292a3e90d46a5&fs=m:0+t:6+f:!2,m:0+t:13+f:!2,m:0+t:80+f:!2,m:1+t:2+f:!2,m:1+t:23+f:!2,m:0+t:7+f:!2,m:1+t:3+f:!2&fields=f12,f14,f2,f3,f62,f184,f66,f69,f72,f75,f78,f81,f84,f87,f204,f205,f124"
-            data = self.s.get(url, timeout=10).json()['data']['diff']
-            for stock in data:
-                try:
-                    code = stock['f12']                 # 股票代码
-                    name = stock['f14']                 # 股票名称
-                    trade = stock['f2']                 # 最新价
-                    zdf = stock['f3']                   # 涨跌幅
-                    jlr = stock['f62']/10000                  # 主力净流入
-                    cddjlr = stock['f66']/10000               # 超大单净流入
-                    ddjlr = stock['f72']/10000                # 大单净流入
-                    zdjlr = stock['f78']/10000                # 中单净流入
-                    xdjlr = stock['f84']/10000                # 小单净流入
-
-                    if code in self.now_format_stock_dict.keys():
-                        self.now_format_stock_dict[code]['zdf'] = zdf
-                        self.now_format_stock_dict[code]['jlr'] = jlr
-                        self.now_format_stock_dict[code]['trade'] = trade
-                        self.now_format_stock_dict[code]['cddjlr'] = cddjlr
-                        self.now_format_stock_dict[code]['ddjlr'] = ddjlr
-                        self.now_format_stock_dict[code]['zdjlr'] = zdjlr
-                        self.now_format_stock_dict[code]['xdjlr'] = xdjlr
-                except:
-                    continue
-        except:
-            pass
-        """
 
     # 获取当前股票数据方法
     def now_data_func(self, code, url, ts_code):
@@ -2230,6 +2110,11 @@ class StockNet():
             # 获取当日数据结束
             self.now_data_status = 2
 
+            # 将当前自选加入监控列表
+            if self.is_zxg_monitor:
+                for code in self.zxg_list:
+                    sn.rule_matched_list['rule1'].append(code)
+
             # > ----------------------------- * 过滤规则 * --------------------------
             self.rule_filter()
 
@@ -2313,13 +2198,8 @@ if __name__ == "__main__":
     appkey = config.get('user', 'appkey')
 
     # 实例化
-    sn = StockNet(token, is_limit, limit_num, is_notify, cookie, appkey)
+    sn = StockNet(token, is_limit, limit_num, is_notify, is_zxg_monitor, zxg_list, cookie, appkey)
 
-    # 将当前自选加入监控列表
-    if is_zxg_monitor:
-        for code in zxg_list:
-            sn.rule_matched_list['rule1'].append(code)
-    
     # 开始工作
     sn.main()
 
