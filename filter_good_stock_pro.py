@@ -671,7 +671,7 @@ class StockNet():
             else:
                 print("[-] 获取获取资金流量方法失败!! errcode:100205, errmsg:%s" % e)
 
-    def monitor_money_flow(self):
+    def monitor_money_flow(self, once=False):
         # 循环监控
         while True:
             try:
@@ -752,6 +752,10 @@ class StockNet():
                         pass
 
                 gevent.joinall(threads)
+
+                # 如果是执行一次，则退出
+                if once:
+                    break
 
                 # 15秒获取一次实时资金信息
                 time.sleep(20)
@@ -2112,11 +2116,11 @@ class StockNet():
                 if self.first_zxg_add:
                     for code in self.zxg_list:
                         sn.rule_matched_list['rule1'].append(code)
-
-                    self.first_zxg_add = False
+                        
+                        self.first_zxg_add = False
 
                     # 执行一次
-                    self.monitor_money_flow()
+                    self.monitor_money_flow(once=True)
 
             # 获取当日数据结束
             self.now_data_status = 2
