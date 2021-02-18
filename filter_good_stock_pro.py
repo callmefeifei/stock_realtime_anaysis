@@ -1951,7 +1951,7 @@ class StockNet():
                     print line*150
             except Exception as e:
                 print(e)
-                import pdb;pdb.set_trace()
+                #import pdb;pdb.set_trace()
                 continue
         print "\n"
 
