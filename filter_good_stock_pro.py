@@ -1361,7 +1361,7 @@ class StockNet():
             if self.is_zxg_monitor:
                 for code in self.zxg_list:
                     stock = code
-                    name = 'unkonw'
+                    name = self.yestoday_stock_dict[code]['name']
                     zdf = self.yestoday_stock_dict[code]['zdf']
                     jlr = self.yestoday_stock_dict[code]['jlr']
                     fh = "\033[1;37m+\033[0m"
@@ -1371,8 +1371,6 @@ class StockNet():
                         self.add2matched("rule1", code)
 
                         self.rule_matched_list['rule1'].append(code)
-
-                    import pdb;pdb.set_trace()
 
         except Exception as e2:
             print e2
