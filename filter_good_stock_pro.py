@@ -2312,14 +2312,17 @@ if __name__ == "__main__":
     # appkey
     appkey = config.get('user', 'appkey')
 
-    # 开始工作
+    # 实例化
     sn = StockNet(token, is_limit, limit_num, is_notify, cookie, appkey)
-    sn.main()
 
     # 将当前自选加入监控列表
     if is_zxg_monitor:
         for code in zxg_list:
             sn.rule_matched_list['rule1'].append(code)
+    
+    # 开始工作
+    sn.main()
+
 
 
 
