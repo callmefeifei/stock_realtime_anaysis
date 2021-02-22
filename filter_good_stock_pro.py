@@ -935,7 +935,7 @@ class StockNet():
                 ma10 = 0
                 ma30 = 0
                 trade = 0
-        except:
+        except Exception as e:
             ma5 = 0
             ma10 = 0
             ma30 = 0
@@ -961,6 +961,7 @@ class StockNet():
 
         # 获取昨日均线价格
         y_ma5, y_ma10, y_ma30,y_trade = self.get_his_data(code)
+        print code, self.last_date, y_ma5, y_ma10, y_ma30, y_trade
 
         # 获取昨日资金详情
         try:
@@ -1242,8 +1243,8 @@ class StockNet():
                 # 技术指标(MACD、KDJ等)
                 stock_js_data = {}
                 for i in jx_data['result']['ApiResults']['zj']['Trend'][2]:
-                    stock_js_data[i['TDate']] = i
-
+                    TDate = "%s-%02d-%02d" % (i['TDate'].split("/")[0], float(i['TDate'].split("/")[1]), float(i['TDate'].split("/")[2].split(' ')[0]))
+                    stock_js_data[TDate] = i
             else:
                 stock_jx_data = jx_data
 
@@ -1251,7 +1252,7 @@ class StockNet():
                 try:
                     if isinstance(stock, dict):
                         stock_dict = {}
-                        stock_dict['date'] = stock['TDate']
+                        stock_dict['date'] = "%s-%02d-%02d" % (stock['TDate'].split("/")[0], float(stock['TDate'].split("/")[1]), float(stock['TDate'].split("/")[2].split(' ')[0]))
                         stock_dict['open'] = stock['Open']
                         stock_dict['high'] = stock['High']
                         stock_dict['close'] = stock['Close']
