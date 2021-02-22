@@ -1035,6 +1035,7 @@ class StockNet():
                 self.yestoday_stock_dict[code]['y_trade'] = y_trade
                 self.yestoday_stock_dict[code]['stock_info_list'] = stock_info_list
         except Exception as e:
+            #print(0,e)
             pass
 
         self.ys_data_count += 1
@@ -1143,6 +1144,7 @@ class StockNet():
                 self.now_stock_dict[code]['jlr'] = 0
 
         except Exception as e:
+            #print(0,e)
             pass
 
         self.now_data_count += 1
@@ -1185,7 +1187,8 @@ class StockNet():
                         self.now_stock_dict[code]['zdf_5d'] = zdf_5d
                         self.now_stock_dict[code]['zlrannk_10d'] = zlrannk_10d
                         self.now_stock_dict[code]['zdf_10d'] = zdf_10d
-                except:
+                except Exception as e:
+                    #print(1,e)
                     continue
 
             # 获取当日股票数据(最新价、涨跌幅、资金资金实时流入情况)
@@ -1211,7 +1214,8 @@ class StockNet():
                         self.now_stock_dict[code]['ddjlr'] = ddjlr
                         self.now_stock_dict[code]['zdjlr'] = zdjlr
                         self.now_stock_dict[code]['xdjlr'] = xdjlr
-                except:
+                except Exception as e:
+                    #print(2,e)
                     continue
 
             # 生成今日股票数据列表
