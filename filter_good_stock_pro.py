@@ -300,6 +300,14 @@ class StockNet():
             else:
                 zjdx1 = 2 # 中立
 
+            # 资金动向
+            if '流入' in result['result']['ApiResults']['zj']['Capital'][0]['zjdx1']:
+                hydx1 = 1 # 流入
+            elif '流出' in result['result']['ApiResults']['zj']['Capital'][0]['zjdx1']:
+                hydx1 = 0 # 流出
+            else:
+                hydx1 = 2 # 中立
+
             # 参与意愿
             cyyy = result['result']['ApiResults']['zj']['Market'][0]['scrd2']
             cyyy_zdf = re.findall('-?\d+\.?\d*e?[-+]?\d*', cyyy)
@@ -364,6 +372,7 @@ class StockNet():
                     "kpzt":kpzt,
                     "zlcb":zlcb,
                     "zjdx1":zjdx1,
+                    'hydx1':hydx1,
                     "zl_ma20":zl_ma20,
                     "zl_ma60":zl_ma60,
                     "zljlr":zljlr,
@@ -393,6 +402,7 @@ class StockNet():
                     "kpzt":kpzt,
                     "zlcb":zlcb,
                     "zjdx1":zjdx1,
+                    "hydx1":hydx1,
                     "zl_ma20":zl_ma20,
                     "zl_ma60":zl_ma60,
                     "zljlr":zljlr,
@@ -1067,6 +1077,7 @@ class StockNet():
             kpzt = self.stock_anaylse_dict[code]['kpzt']                    # 控盘状态
             zlcb = self.stock_anaylse_dict[code]['zlcb']                    # 主力成本
             zjdx1 = self.stock_anaylse_dict[code]['zjdx1']                  # 主力资金动向
+            hydx1 = self.stock_anaylse_dict[code]['hydx1']                  # 行业资金动向
             rankup = self.stock_anaylse_dict[code]['rankup']                # 近期排行上升还是下降?
             summary = self.stock_anaylse_dict[code]['summary']              # 总结
             value_summary = self.stock_anaylse_dict[code]['value_summary']  # 价值总结
@@ -1090,6 +1101,7 @@ class StockNet():
                 self.now_stock_dict[code]['kpzt'] = kpzt
                 self.now_stock_dict[code]['zlcb'] = zlcb
                 self.now_stock_dict[code]['zjdx1'] = zjdx1
+                self.now_stock_dict[code]['hydx1'] = hydx1
                 self.now_stock_dict[code]['rankup'] = rankup
                 self.now_stock_dict[code]['summary'] = summary
                 self.now_stock_dict[code]['summary'] = value_summary
@@ -1113,6 +1125,7 @@ class StockNet():
                 self.now_stock_dict[code]['kpzt'] = kpzt
                 self.now_stock_dict[code]['zlcb'] = zlcb
                 self.now_stock_dict[code]['zjdx1'] = zjdx1
+                self.now_stock_dict[code]['hydx1'] = hydx1
                 self.now_stock_dict[code]['rankup'] = rankup
                 self.now_stock_dict[code]['summary'] = summary
                 self.now_stock_dict[code]['summary'] = value_summary
@@ -1210,34 +1223,71 @@ class StockNet():
             return
 
     # 均线数据获取赋值
-    def jx_data_func(self, url, code):
+    def jx_data_func(self, url, ts_code, code):
         try:
-            jx_data = self.s.get(url, timeout=5).json()['record']
+            jx_data = self.s.get(url, timeout=5).json()
+
+            # 新股(小于60日)
+            if jx_data['re'] is False:
+                url = "http://api.finance.ifeng.com/akdaily/?code=%s&type=last" % ts_code
+                jx_data = self.s.get(url, timeout=5).json()['record'][-5:]
+
         except Exception as e:
             jx_data = []
 
-        for stock in jx_data:
-            try:
-                stock_dict = {}
-                stock_dict['date'] = stock[0]
-                stock_dict['open'] = stock[1]
-                stock_dict['high'] = stock[2]
-                stock_dict['close'] = stock[3]
-                stock_dict['low'] = stock[4]
-                stock_dict['volume'] = stock[5]
-                stock_dict['changepercent'] = stock[7]
-                stock_dict['ma5'] = stock[8]
-                stock_dict['ma10'] = stock[9]
-                stock_dict['ma20'] = stock[10]
-                stock_dict['hsl'] = stock[14]
+        """
+        TDate: "2020/11/20 0:00:00",
+        Close: "11.97",
+        Open: "11.6",
+        High: "12.32",
+        Low: "11.5",
+        Price5: "11.52",
+        Price20: "11.0695",
+        Price60: "10.7246666666667"
+        """
 
-                if code in self.stock_jx_data.keys():
-                    self.stock_jx_data[code].append(stock_dict)
-                else:
-                    self.stock_jx_data[code] = []
-                    self.stock_jx_data[code].append(stock_dict)
-            except Exception as e:
-                continue
+        if jx_data:
+            if isinstance(jx_data, dict):
+                # k线数据
+                stock_jx_data = jx_data['result']['ApiResults']['zj']['Trend'][1]
+            else:
+                stock_jx_data = jx_data
+
+            for stock in stock_jx_data:
+                try:
+                    if isinstance(stock, dict):
+                        stock_dict = {}
+                        stock_dict['date'] = stock['TDate']
+                        stock_dict['open'] = stock['Open']
+                        stock_dict['high'] = stock['High']
+                        stock_dict['close'] = stock['Close']
+                        stock_dict['low'] = stock['Low']
+                        stock_dict['changepercent'] = (float(stock['Close'])-float(stock['Open']))/float(stock['Open'])*100
+                        stock_dict['ma5'] = stock['Price5']
+                        stock_dict['ma10'] = stock['Price20']
+                        stock_dict['ma20'] = stock['Price60']
+                        #stock_dict['hsl'] = 0 # 无该数据指标
+                    else:
+                        stock_dict = {}
+                        stock_dict['date'] = stock[0]
+                        stock_dict['open'] = stock[1]
+                        stock_dict['high'] = stock[2]
+                        stock_dict['close'] = stock[3]
+                        stock_dict['low'] = stock[4]
+                        stock_dict['changepercent'] = stock[7]
+                        stock_dict['ma5'] = stock[8]
+                        stock_dict['ma10'] = stock[9]
+                        stock_dict['ma20'] = stock[10]
+                        #stock_dict['hsl'] = stock[14] # 无该数据指标
+
+                    if code in self.stock_jx_data.keys():
+                        self.stock_jx_data[code].append(stock_dict)
+                    else:
+                        self.stock_jx_data[code] = []
+                        self.stock_jx_data[code].append(stock_dict)
+                except Exception as e:
+                    print(e)
+                    continue
 
         # 只保存最多最后五个交易日的
         if code in self.stock_jx_data.keys():
@@ -1533,8 +1583,10 @@ class StockNet():
                 # 获取均线数据开始
                 self.jx_data_status = 1
                 for i in self.all_stock_code:
-                    url = "http://api.finance.ifeng.com/akdaily/?code=%s&type=last" % self.all_stock_code[i]['ts_code']
-                    threads.append(p.spawn(self.jx_data_func, url, self.all_stock_code[i]['code']))
+                    #url = "http://api.finance.ifeng.com/akdaily/?code=%s&type=last" % self.all_stock_code[i]['ts_code']
+                    #url = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=%s&scale=240&datalen=5" % self.all_stock_code[i]['ts_code']
+                    url = "http://quote.eastmoney.com/zixuan/api/znzg?code=%s" % self.all_stock_code[i]['code']
+                    threads.append(p.spawn(self.jx_data_func, url, self.all_stock_code[i]['ts_code'], self.all_stock_code[i]['code']))
 
                     if self.is_limit:
                         self.count += 1
@@ -1561,6 +1613,7 @@ class StockNet():
                 self.now_format_stock_dict[code]['kpType'] = self.stock_anaylse_dict[code]['kpzt']                  # 控盘情况
                 self.now_format_stock_dict[code]['zlcb'] = self.stock_anaylse_dict[code]['zlcb']                    # 主力成本
                 self.now_format_stock_dict[code]['zjdx1'] = self.stock_anaylse_dict[code]['zjdx1']                  # 主力资金流入状态
+                self.now_format_stock_dict[code]['hydx1'] = self.stock_anaylse_dict[code]['hydx1']                  # 行业资金流入状态
                 self.now_format_stock_dict[code]['score'] = self.stock_anaylse_dict[code]['TotalScore']             # 得分
                 self.now_format_stock_dict[code]['rank'] = self.stock_anaylse_dict[code]['Ranking']                 # 排名
                 self.now_format_stock_dict[code]['zl_ma20'] = self.stock_anaylse_dict[code]['zl_ma20']              # 主力成本60日线
@@ -1779,6 +1832,14 @@ class StockNet():
                         else:
                             zjdx1 = "中立"
 
+                        # 行业动向
+                        if self.now_format_stock_dict[code]['hydx1'] == 1:
+                            hydx1 = "\033[1;31m增仓\033[0m"
+                        elif self.now_format_stock_dict[code]['hydx1'] == 0:
+                            hydx1 = "\033[1;32m减仓\033[0m"
+                        else:
+                            hydx1 = "中立"
+
                         # 今日打败
                         if float(self.now_format_stock_dict[code]['drbx']) >= 95:
                             drbx = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['drbx'])
@@ -1811,7 +1872,7 @@ class StockNet():
 
                         if '流出' in note:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s 行业动向:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     score, \
@@ -1823,7 +1884,8 @@ class StockNet():
                                                                                                                     cyyy, \
                                                                                                                     pjyk, \
                                                                                                                     self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                    zjdx1
+                                                                                                                    zjdx1, \
+                                                                                                                    hydx1
 
                             )
 
@@ -1874,7 +1936,7 @@ class StockNet():
                             """
                         else:
                             # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s\n" % (
+                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s 行业动向:%s\n" % (
                                                                                                                     code, \
                                                                                                                     self.now_format_stock_dict[code]['name'], \
                                                                                                                     score, \
@@ -1886,7 +1948,8 @@ class StockNet():
                                                                                                                     cyyy, \
                                                                                                                     pjyk, \
                                                                                                                     self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                    zjdx1
+                                                                                                                    zjdx1, \
+                                                                                                                    hydx1
 
                             )
 
