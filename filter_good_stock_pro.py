@@ -961,7 +961,7 @@ class StockNet():
 
         # 获取昨日均线价格
         y_ma5, y_ma10, y_ma30,y_trade = self.get_his_data(code)
-        print code, self.last_date, y_ma5, y_ma10, y_ma30, y_trade
+        #print code, self.last_date, y_ma5, y_ma10, y_ma30, y_trade
 
         # 获取昨日资金详情
         try:
