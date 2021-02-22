@@ -639,7 +639,7 @@ class StockNet():
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
                     if '大幅流出' not in note:
-                        if money_flow_bs >= 10:
+                        if money_flow_bs >= 10 and float(_jlr) > 100:
                             is_continue_in = self.yd_count(code)
                             self.notify("发现异动股票", content, True, code)
                         else:
@@ -656,7 +656,7 @@ class StockNet():
                         pass
                     else:
                         if '大幅流出' not in note:
-                            if money_flow_bs >= 10:
+                            if money_flow_bs >= 10 and float(_jlr) > 100:
                                 is_continue_in = self.yd_count(code)
                                 self.notify("发现异动股票", content, True, code)
                             else:
