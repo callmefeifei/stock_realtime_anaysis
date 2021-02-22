@@ -1235,21 +1235,15 @@ class StockNet():
         except Exception as e:
             jx_data = []
 
-        """
-        TDate: "2020/11/20 0:00:00",
-        Close: "11.97",
-        Open: "11.6",
-        High: "12.32",
-        Low: "11.5",
-        Price5: "11.52",
-        Price20: "11.0695",
-        Price60: "10.7246666666667"
-        """
-
         if jx_data:
             if isinstance(jx_data, dict):
-                # k线数据
-                stock_jx_data = jx_data['result']['ApiResults']['zj']['Trend'][1]
+                # k线数据(仅取后5天，否则将获取不到数据)
+                stock_jx_data = jx_data['result']['ApiResults']['zj']['Trend'][1][-5:]
+                # 技术指标(MACD、KDJ等)
+                stock_js_data = {}
+                for i in jx_data['result']['ApiResults']['zj']['Trend'][2]:
+                    stock_js_data[i['TDate']] = i
+
             else:
                 stock_jx_data = jx_data
 
@@ -1267,6 +1261,14 @@ class StockNet():
                         stock_dict['ma10'] = stock['Price20']
                         stock_dict['ma20'] = stock['Price60']
                         #stock_dict['hsl'] = 0 # 无该数据指标
+
+                        if stock_dict['date'] in stock_js_data.keys():
+                            js = stock_js_data[stock_dict['date']]
+                            stock_dict['macd'] = js['MACD']
+                            stock_dict['kdj'] = [js['K'], js['D'], js['J']]
+                        else:
+                            stock_dict['macd'] = 0
+                            stock_dict['kdj'] = [0, 0, 0]
                     else:
                         stock_dict = {}
                         stock_dict['date'] = stock[0]
@@ -1279,12 +1281,15 @@ class StockNet():
                         stock_dict['ma10'] = stock[9]
                         stock_dict['ma20'] = stock[10]
                         #stock_dict['hsl'] = stock[14] # 无该数据指标
+                        stock_dict['macd'] = 0
+                        stock_dict['kdj'] = 0
 
                     if code in self.stock_jx_data.keys():
                         self.stock_jx_data[code].append(stock_dict)
                     else:
                         self.stock_jx_data[code] = []
                         self.stock_jx_data[code].append(stock_dict)
+
                 except Exception as e:
                     print(e)
                     continue
