@@ -1469,6 +1469,7 @@ class StockNet():
                 content = "[%s][%s][rule6][%s][%s][zlrank:%s][score:%s][rank:%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近期涨跌幅(5/10):%s/%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], self.now_stock_dict[code]['zlrank_today'],self.now_stock_dict[code]['score'],self.now_stock_dict[code]['rank'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.now_stock_dict[code]['zdf_10d'])
                 if code not in self.rule_matched_list['rule6']:
                     self.add2matched("rule6", code)
+                    self.write_result("rule6", content)
 
                 if code in self.rule_matched_list["rule6"]:
                     self.write_result("rule6", content)
@@ -1658,8 +1659,11 @@ class StockNet():
                 # d j  > 0 < 10 (越小越好)
                 # d k  > 0 < 10
                 # dj > 10 && dk > 5
+<<<<<<< HEAD
                 #and sum([ i['changepercent'] for i in self.stock_jx_data[code][-3:]]) > 0 \
                 #and sum([ i['changepercent'] for i in self.stock_jx_data[code][-3:]]) < 5 \
+=======
+>>>>>>> f074f134ff1f42204b2e933e19e2ac6d23b956b9
                 if _L_dj_diff > 0 and _L_dj_diff < 10 \
                 and _L_dk_diff > 0 and _L_dk_diff < 10 \
                 and (_Y_dj_diff < _Y_dk_diff or (_Y_dj_diff > 10 and _Y_dj_diff < 20 and _Y_dk_diff > 5 and _Y_dk_diff < 10)) \
@@ -1670,9 +1674,13 @@ class StockNet():
                     print "[%s][rule8][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     fh = "\033[1;37m+\033[0m"
                     content = "[%s][%s][rule8][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+<<<<<<< HEAD
 
+=======
+>>>>>>> f074f134ff1f42204b2e933e19e2ac6d23b956b9
                     if code not in self.rule_matched_list['rule8']:
                         self.add2matched("rule8", code)
+                        self.write_result("rule8", content)
 
                     if code in self.rule_matched_list["rule8"]:
                         self.write_result("rule8", content)
