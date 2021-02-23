@@ -136,6 +136,8 @@ class StockNet():
         self.rule_matched_list['rule4'] = []
         self.rule_matched_list['rule5'] = []
         self.rule_matched_list['rule6'] = []
+        self.rule_matched_list['rule7'] = []
+
 
         # 告警去重
         self.alarm_db = {}
@@ -639,7 +641,7 @@ class StockNet():
                 # 判断是否已告警过
                 if code not in self.alarm_db.keys():
                     if '大幅流出' not in note:
-                        if money_flow_bs >= 10:
+                        if money_flow_bs >= 10 and float(_jlr) > 100:
                             is_continue_in = self.yd_count(code)
                             self.notify("发现异动股票", content, True, code)
                         else:
@@ -656,7 +658,7 @@ class StockNet():
                         pass
                     else:
                         if '大幅流出' not in note:
-                            if money_flow_bs >= 10:
+                            if money_flow_bs >= 10 and float(_jlr) > 100:
                                 is_continue_in = self.yd_count(code)
                                 self.notify("发现异动股票", content, True, code)
                             else:
@@ -717,6 +719,9 @@ class StockNet():
                 # rule6
                 rule6_list = self.rule_matched_list['rule6']
 
+                # rule7
+                rule7_list = self.rule_matched_list['rule7']
+
                 p = Pool(300)
                 threads = []
                 # rule1
@@ -758,6 +763,13 @@ class StockNet():
                 for code in rule6_list:
                     try:
                         threads.append(p.spawn(self.fetch_money_flow, code, "rule6"))
+                    except:
+                        pass
+
+                # rule7
+                for code in rule7_list:
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule7"))
                     except:
                         pass
 
@@ -947,7 +959,7 @@ class StockNet():
     def yestody_data_func(self, code, url, ts_code):
         # 获取当前均线价格
         try:
-            ma_api = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=%s&scale=240&datalen=1" % (ts_code)
+            ma_api = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=%s&scale=15&datalen=1" % (ts_code)
             con = self.s.get(url=ma_api, timeout=10).json()[0]
             ma5 = float(con['ma_price5'])
             ma10 = float(con['ma_price10'])
@@ -1549,6 +1561,26 @@ class StockNet():
 
                     if code in self.rule_matched_list["rule4"]:
                         self.write_result("rule4", content)
+
+                # rule7:kdj指标
+                # j>k>d主升浪
+                # j的1.5倍 > d
+                # 昨天或者前天有一次j<k的
+                if float(self.stock_jx_data[stock][-1]['kdj'][-1]) > float(self.stock_jx_data[stock][-1]['kdj'][0]) \
+                    and float(self.stock_jx_data[stock][-1]['kdj'][-1]) > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
+                    and float(self.stock_jx_data[stock][-1]['kdj'][0]) > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
+                    and float(self.stock_jx_data[stock][-1]['kdj'][0]) > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
+                    and (float(self.stock_jx_data[stock][-2]['kdj'][-1]) < float(self.stock_jx_data[stock][-2]['kdj'][0]) or float(self.stock_jx_data[stock][-3]['kdj'][-1]) < float(self.stock_jx_data[stock][-3]['kdj'][0])) \
+                    and float(self.stock_jx_data[stock][-1]['kdj'][-1])/1.68 > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
+                    and 1==1:
+                    print "[%s][rule7][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s macd:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'], float(self.stock_jx_data[stock][-1]['macd']))
+                    fh = "\033[1;37m+\033[0m"
+                    content = "[%s][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    if code not in self.rule_matched_list['rule7']:
+                        self.add2matched("rule7", code)
+
+                    if code in self.rule_matched_list["rule7"]:
+                        self.write_result("rule7", content)
 
             except Exception as e:
                 try:
