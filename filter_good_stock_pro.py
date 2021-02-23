@@ -1367,6 +1367,10 @@ class StockNet():
             if '质地很差' in self.now_stock_dict[code]['value_summary']:
                 return False
 
+            # 如果当前主力资金净流入>负1000w, 直接false.
+            if self.now_stock_dict[code]['jlr'] <= -800:
+                return False
+
             # 行业资金为流入状态 或 主力资金增仓
             # 10点前 > 300w 则不判断行业资金与主力资金了
             is_pass = False
@@ -1379,9 +1383,10 @@ class StockNet():
                 if self.now_stock_dict[code]['jlr'] > 1000:
                     is_pass = True
 
-            if is_pass is False:
-                if self.now_stock_dict[code]['hydx1'] == 0:
-                    if self.now_stock_dict[code]['zjdx1'] == 0:
+            # 如果行业资金流出、主力资金流出，且当前净流入不满足以上条件, 则返回fase
+            if self.now_stock_dict[code]['hydx1'] == 0:
+                if self.now_stock_dict[code]['zjdx1'] == 0:
+                    if is_pass is False:
                         return False
 
             self.rule_matched_list[rule].append(code)
