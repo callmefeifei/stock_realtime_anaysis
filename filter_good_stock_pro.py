@@ -137,6 +137,7 @@ class StockNet():
         self.rule_matched_list['rule5'] = []
         self.rule_matched_list['rule6'] = []
         self.rule_matched_list['rule7'] = []
+        self.rule_matched_list['rule8'] = []
 
 
         # 告警去重
@@ -728,6 +729,9 @@ class StockNet():
                 # rule7
                 rule7_list = self.rule_matched_list['rule7']
 
+                # rule8
+                rule8_list = self.rule_matched_list['rule8']
+
                 p = Pool(300)
                 threads = []
                 # rule1
@@ -776,6 +780,13 @@ class StockNet():
                 for code in rule7_list:
                     try:
                         threads.append(p.spawn(self.fetch_money_flow, code, "rule7"))
+                    except:
+                        pass
+
+                # rule8
+                for code in rule8_list:
+                    try:
+                        threads.append(p.spawn(self.fetch_money_flow, code, "rule8"))
                     except:
                         pass
 
@@ -1305,7 +1316,7 @@ class StockNet():
                         stock_dict['ma20'] = stock[10]
                         #stock_dict['hsl'] = stock[14] # 无该数据指标
                         stock_dict['macd'] = 0
-                        stock_dict['kdj'] = 0
+                        stock_dict['kdj'] = [0, 0, 0]
 
                     if code in self.stock_jx_data.keys():
                         self.stock_jx_data[code].append(stock_dict)
@@ -1607,25 +1618,40 @@ class StockNet():
                     if code in self.rule_matched_list["rule7"]:
                         self.write_result("rule7", content)
 
-
                 # 昨日
                 # d j  > 0 < 10 (越小越好)
                 # d k  > 0 < 10
+                # dj > 10 && dk > 5
+
+                #and (_Y_dj_diff < _Y_dk_diff or (_Y_dj_diff > 10 and _Y_dj_diff < 20 and _Y_dk_diff > 5 and _Y_dk_diff < 10)) \
+                #and (_Y_dj_diff > 10 and _Y_dj_diff < 20 and _Y_dk_diff > 5 and _Y_dk_diff < 10) \
                 if _L_dj_diff > 0 and _L_dj_diff < 10 \
                 and _L_dk_diff > 0 and _L_dk_diff < 10 \
-                and _Y_dj_diff < _Y_dk_diff \
+                and (_Y_dj_diff < _Y_dk_diff or (_Y_dj_diff > 10 and _Y_dj_diff < 20 and _Y_dk_diff > 5 and _Y_dk_diff < 10)) \
                 and self.stock_jx_data[code][-1]['changepercent'] > 0 \
+                and self.stock_jx_data[code][-2]['changepercent'] > -0.5 \
+                and sum([ i['changepercent'] for i in self.stock_jx_data[code][-3:]]) > 0 \
+                and sum([ i['changepercent'] for i in self.stock_jx_data[code][-3:]]) < 5 \
                 and 1==1:
                     print "[%s][rule8][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
-                    return True
+                    fh = "\033[1;37m+\033[0m"
+                    content = "[%s][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    if code not in self.rule_matched_list['rule8']:
+                        self.add2matched("rule8", code)
 
+                    if code in self.rule_matched_list["rule8"]:
+                        self.write_result("rule8", content)
             except Exception as e:
                 try:
                     # 如果是int，则不告警
                     code = int(str(e).strip("'"))
                 except:
                     pass
-                    print("[-] 规则过滤出错!! errcode:100207, errmsg:%s" % e)
+                    if "'int' object has no attribute" in str(e):
+                        pass
+                    else:
+                        print("[-] 规则过滤出错!! errcode:100207, errmsg:%s" % e)
+                #import pdb;pdb.set_trace()
 
     # 获取所有股票均线数据
     def get_jx_data(self):
