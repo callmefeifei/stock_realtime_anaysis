@@ -436,6 +436,8 @@ class StockNet():
         try:
             # 先判断是否有当日本地缓存, 如果有直接加载
             anaylse_cache_file="./cache/%s_anaylse.json" % str(time.strftime('%Y%m%d' , time.localtime()))
+            jx_cache_file="./cache/%s.json" % str(time.strftime('%Y%m%d' , time.localtime()))
+
             if not os.path.exists("./cache"):
                 os.makedirs("./cache/")
 
@@ -443,10 +445,14 @@ class StockNet():
                 with open(anaylse_cache_file, 'r') as f:
                     cache = f.read()
 
+                with open(jx_cache_file, 'r') as f:
+                    jx_cache = f.read()
+
                 ntime = "\033[1;32m%s\033[0m" % str(time.strftime('%H:%M:%S' , time.localtime()))
                 fh = "\033[1;37m+\033[0m"
                 print("[%s][%s] 发现当天数据分析缓存文件, 加载中请稍后..." % (fh, ntime))
                 self.stock_anaylse_dict = json.loads(cache)
+                self.stock_jx_data = json.loads(jx_cache)
 
             else:
                 # 如果没有, 则重新获取
@@ -1493,6 +1499,25 @@ class StockNet():
                 zdf = self.yestoday_stock_dict[stock]['zdf']
                 jlr = self.yestoday_stock_dict[stock]['jlr']
 
+                #                          KDJ指标                  
+                #- 昨日kdj
+                _L_k = float(self.stock_jx_data[code][-1]['kdj'][0])
+                _L_d = float(self.stock_jx_data[code][-1]['kdj'][1])
+                _L_j = float(self.stock_jx_data[code][-1]['kdj'][2])
+                _L_kj_diff = _L_k - _L_j
+                _L_kd_diff = _L_k - _L_d
+                _L_dj_diff = _L_d - _L_j
+                _L_dk_diff = _L_d - _L_k
+
+                # - 前日kdj
+                _Y_k = float(self.stock_jx_data[code][-2]['kdj'][0])
+                _Y_d = float(self.stock_jx_data[code][-2]['kdj'][1])
+                _Y_j = float(self.stock_jx_data[code][-2]['kdj'][2])
+                _Y_kj_diff = _Y_k - _Y_j
+                _Y_kd_diff = _Y_k - _Y_d
+                _Y_dj_diff = _Y_d - _Y_j
+                _Y_dk_diff = _Y_d - _Y_k
+
                 # 昨日净流入>1000w, 且涨跌幅>3
                 #print "[-][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五日净流入:%s" % (code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'])
 
@@ -1564,16 +1589,16 @@ class StockNet():
 
                 # rule7:kdj指标
                 # j>k>d主升浪
-                # j的1.5倍 > d
+                # j的1.68倍 > d
                 # 昨天或者前天有一次j<k的
                 if float(self.stock_jx_data[stock][-1]['kdj'][-1]) > float(self.stock_jx_data[stock][-1]['kdj'][0]) \
                     and float(self.stock_jx_data[stock][-1]['kdj'][-1]) > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
                     and float(self.stock_jx_data[stock][-1]['kdj'][0]) > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
                     and float(self.stock_jx_data[stock][-1]['kdj'][0]) > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
-                    and (float(self.stock_jx_data[stock][-2])['kdj'][-1] < float(self.stock_jx_data[stock][-2])['kdj'][0] or float(self.stock_jx_data[stock][-3])['kdj'][-1] < float(self.stock_jx_data[stock][-3])['kdj'][0]) \
+                    and (float(self.stock_jx_data[stock][-2]['kdj'][-1]) < float(self.stock_jx_data[stock][-2]['kdj'][0]) or float(self.stock_jx_data[stock][-3]['kdj'][-1]) < float(self.stock_jx_data[stock][-3]['kdj'][0])) \
                     and float(self.stock_jx_data[stock][-1]['kdj'][-1])/1.68 > float(self.stock_jx_data[stock][-1]['kdj'][1]) \
                     and 1==1:
-                    print "[%s][rule7][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    #print "[%s][rule7][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     fh = "\033[1;37m+\033[0m"
                     content = "[%s][%s][rule4][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (fh, time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
                     if code not in self.rule_matched_list['rule7']:
@@ -1581,6 +1606,18 @@ class StockNet():
 
                     if code in self.rule_matched_list["rule7"]:
                         self.write_result("rule7", content)
+
+
+                # 昨日
+                # d j  > 0 < 10 (越小越好)
+                # d k  > 0 < 10
+                if _L_dj_diff > 0 and _L_dj_diff < 10 \
+                and _L_dk_diff > 0 and _L_dk_diff < 10 \
+                and _Y_dj_diff < _Y_dk_diff \
+                and self.stock_jx_data[code][-1]['changepercent'] > 0 \
+                and 1==1:
+                    print "[%s][rule8][%s][%s] 昨日净流入:%s 昨日涨跌幅:%s 今日净流入:%s 今日涨跌幅:%s 近五净流入:%s万 近五涨跌幅:%s ma5:%s ma10:%s ma30:%s" % (time.strftime('%Y-%m-%d %H:%M:%S' , time.localtime()), code, self.yestoday_stock_dict[stock]['name'], jlr, zdf, self.now_stock_dict[stock]['jlr'], self.now_stock_dict[stock]['zdf'], self.yestoday_stock_dict[stock]['jlr_5days'], self.now_stock_dict[stock]['zdf_5d'], self.yestoday_stock_dict[stock]['ma5'], self.yestoday_stock_dict[stock]['ma10'], self.yestoday_stock_dict[stock]['ma30'])
+                    return True
 
             except Exception as e:
                 try:
@@ -1728,9 +1765,53 @@ class StockNet():
             return True
         else:
             # ----------- 条件过滤 ---------
-            # 1. 行业流入:增仓
-            if self.now_format_stock_dict[code]['hydx1'] == 1:
+            #                          KDJ指标                  
+            #- 昨日kdj
+            _L_k = float(self.stock_jx_data[code][-1]['kdj'][0])
+            _L_d = float(self.stock_jx_data[code][-1]['kdj'][1])
+            _L_j = float(self.stock_jx_data[code][-1]['kdj'][2])
+            _L_kj_diff = _L_k - _L_j
+            _L_kd_diff = _L_k - _L_d
+            _L_dj_diff = _L_d - _L_j
+            _L_dk_diff = _L_d - _L_k
+
+            # - 前日kdj
+            _Y_k = float(self.stock_jx_data[code][-2]['kdj'][0])
+            _Y_d = float(self.stock_jx_data[code][-2]['kdj'][1])
+            _Y_j = float(self.stock_jx_data[code][-2]['kdj'][2])
+            _Y_kj_diff = _Y_k - _Y_j
+            _Y_kd_diff = _Y_k - _Y_d
+            _Y_dj_diff = _Y_d - _Y_j
+            _Y_dk_diff = _Y_d - _Y_k
+
+
+            # 昨日
+            # d j  > 0 < 10 (越小越好)
+            # d k  > 0 < 10
+            if _L_dj_diff > 0 and _L_dj_diff < 10 \
+            and _L_dk_diff > 0 and _L_dk_diff < 10 \
+            and _Y_dj_diff < _Y_dk_diff \
+            and self.stock_jx_data[code][-1]['changepercent'] > 0 \
+            and 1==1:
+                import pdb;pdb.set_trace()
                 return True
+            
+            #import pdb;pdb.set_trace()
+
+            # 前一日
+            #d<j d<k
+
+
+            # 1. 行业流入:增仓
+            """
+            #if _L_k_diff >= 0 \
+            #and _Y_d > _Y_k and _Y_d > _Y_j \
+            #and _L_k > _L_d and _L_j > _L_k \
+            if self.now_format_stock_dict[code]['hydx1'] == 1 \
+            and 1==1:
+                #import pdb;pdb.set_trace()
+                return True
+            """
 
     def format_func(self, result_file):
 
