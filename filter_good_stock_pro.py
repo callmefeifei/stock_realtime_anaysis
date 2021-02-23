@@ -2093,6 +2093,7 @@ class StockNet():
         for code in sort_code_list.keys():
             fst_jlr = float(sort_code_list[code][0].split("[")[7].split("]")[0].split(":")[1].strip('万'))
 
+            # 流出状态的不入库.
             if float(self.now_format_stock_dict[code]['jlr']) < 0:
                 if fst_jlr > 0:
                     note = '流出状态'
