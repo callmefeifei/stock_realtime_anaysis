@@ -1723,6 +1723,15 @@ class StockNet():
             except:
                 continue
 
+    def filter_conditions(self, single, code):
+        if self.conditions_filter is False:
+            return True
+        else:
+            # ----------- 条件过滤 ---------
+            # 1. 行业流入:增仓
+            if self.now_format_stock_dict[code]['hydx1'] == 1:
+                return True
+
     def format_func(self, result_file):
 
         # 第一步、通过文件获取命中规则的股票代码列表
@@ -1778,280 +1787,285 @@ class StockNet():
                             note = "流出状态"
                             single = 0
 
-                    now_money_flow_bs = self.money_flow_calc(fst_jlr, self.now_format_stock_dict[code]['jlr'])
-                    if single == 1 or self.format_all is True:
-                        # 现价
-                        if self.now_format_stock_dict[code]['trade'] >= self.now_format_stock_dict[code]['zlcb']:
-                            now_trade = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['trade']
-                        else:
-                            now_trade = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['trade']
+                    # 增加过滤条件
+                    _is_filter = False
+                    if self.filter_conditions(single, code):
+                        now_money_flow_bs = self.money_flow_calc(fst_jlr, self.now_format_stock_dict[code]['jlr'])
+                        # 只过滤流入状态的.
+                        if single == 1 or self.format_all is True:
+                            # 现价
+                            if self.now_format_stock_dict[code]['trade'] >= self.now_format_stock_dict[code]['zlcb']:
+                                now_trade = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['trade']
+                            else:
+                                now_trade = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['trade']
 
-                        # 涨跌幅
-                        if self.now_format_stock_dict[code]['zdf'] < 0:
-                            now_zdf = "\033[1;34m%.2f%%\033[0m" % self.now_format_stock_dict[code]['zdf']
-                        else:
-                            now_zdf = "\033[1;31m%.2f%%\033[0m" % self.now_format_stock_dict[code]['zdf']
+                            # 涨跌幅
+                            if self.now_format_stock_dict[code]['zdf'] < 0:
+                                now_zdf = "\033[1;34m%.2f%%\033[0m" % self.now_format_stock_dict[code]['zdf']
+                            else:
+                                now_zdf = "\033[1;31m%.2f%%\033[0m" % self.now_format_stock_dict[code]['zdf']
 
-                        # 得分
-                        if self.now_format_stock_dict[code]['score'] >= 75:
-                            score = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['score']
-                        else:
-                            score = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['score']
+                            # 得分
+                            if self.now_format_stock_dict[code]['score'] >= 75:
+                                score = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['score']
+                            else:
+                                score = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['score']
 
-                        # 排名
-                        if float(self.now_format_stock_dict[code]['rank']) > 200:
-                            rank = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['rank']
-                        else:
-                            rank = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['rank']
+                            # 排名
+                            if float(self.now_format_stock_dict[code]['rank']) > 200:
+                                rank = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['rank']
+                            else:
+                                rank = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['rank']
 
-                        # 排名增长
-                        if self.now_format_stock_dict[code]['rankup'] == '-':
-                            pass
-                        elif float(self.now_format_stock_dict[code]['rankup']) < 0:
-                            rankup = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['rankup']                            
-                        else:
-                            rankup = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['rankup']
+                            # 排名增长
+                            if self.now_format_stock_dict[code]['rankup'] == '-':
+                                pass
+                            elif float(self.now_format_stock_dict[code]['rankup']) < 0:
+                                rankup = "\033[1;34m%s\033[0m" % self.now_format_stock_dict[code]['rankup']                            
+                            else:
+                                rankup = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['rankup']
 
-                        # 主力成本20日与60日涨跌幅
-                        try:
-                            zl_20to60 = "%.2f" % ((self.now_format_stock_dict[code]['zl_ma20'] - self.now_format_stock_dict[code]['zl_ma60'] ) / self.now_format_stock_dict[code]['zl_ma60'] * 100)
-                        except:
-                            zl_20to60 = "0.00"
-                        if float(zl_20to60) > 0:
-                            zl_20to60 = "\033[1;31m%s%%\033[0m" % zl_20to60
-                        else:
-                            zl_20to60 = "\033[1;34m%s%%\033[0m" % zl_20to60
+                            # 主力成本20日与60日涨跌幅
+                            try:
+                                zl_20to60 = "%.2f" % ((self.now_format_stock_dict[code]['zl_ma20'] - self.now_format_stock_dict[code]['zl_ma60'] ) / self.now_format_stock_dict[code]['zl_ma60'] * 100)
+                            except:
+                                zl_20to60 = "0.00"
+                            if float(zl_20to60) > 0:
+                                zl_20to60 = "\033[1;31m%s%%\033[0m" % zl_20to60
+                            else:
+                                zl_20to60 = "\033[1;34m%s%%\033[0m" % zl_20to60
 
-                        # 主力成本现在与60日涨跌幅
-                        try:
-                            zl_nowto20 = "%.2f" % ((self.now_format_stock_dict[code]['zlcb'] - self.now_format_stock_dict[code]['zl_ma20'] ) / self.now_format_stock_dict[code]['zl_ma20'] * 100)
-                        except:
-                            zl_nowto20 = "0.00"
-                        if float(zl_nowto20) > 0:
-                            zl_nowto20 = "\033[1;31m%s%%\033[0m" % zl_nowto20
-                        else:
-                            zl_nowto20 = "\033[1;34m%s%%\033[0m" % zl_nowto20
+                            # 主力成本现在与60日涨跌幅
+                            try:
+                                zl_nowto20 = "%.2f" % ((self.now_format_stock_dict[code]['zlcb'] - self.now_format_stock_dict[code]['zl_ma20'] ) / self.now_format_stock_dict[code]['zl_ma20'] * 100)
+                            except:
+                                zl_nowto20 = "0.00"
+                            if float(zl_nowto20) > 0:
+                                zl_nowto20 = "\033[1;31m%s%%\033[0m" % zl_nowto20
+                            else:
+                                zl_nowto20 = "\033[1;34m%s%%\033[0m" % zl_nowto20
 
-                        # 现价与主力成本涨跌幅
-                        try:
-                            now2zlcb = "%.2f" % ((self.now_format_stock_dict[code]['trade'] - self.now_format_stock_dict[code]['zlcb'] ) / self.now_format_stock_dict[code]['zlcb'] * 100)
-                        except:
-                            now2zlcb = "0.00"
-                        if float(now2zlcb) > 0:
-                            now2zlcb = "\033[1;31m%s%%\033[0m" % now2zlcb
-                        else:
-                            now2zlcb = "\033[1;34m%s%%\033[0m" % now2zlcb
+                            # 现价与主力成本涨跌幅
+                            try:
+                                now2zlcb = "%.2f" % ((self.now_format_stock_dict[code]['trade'] - self.now_format_stock_dict[code]['zlcb'] ) / self.now_format_stock_dict[code]['zlcb'] * 100)
+                            except:
+                                now2zlcb = "0.00"
+                            if float(now2zlcb) > 0:
+                                now2zlcb = "\033[1;31m%s%%\033[0m" % now2zlcb
+                            else:
+                                now2zlcb = "\033[1;34m%s%%\033[0m" % now2zlcb
 
-                        # 增长倍数
-                        if float(now_money_flow_bs) > 2.5:
-                            now_money_flow_bs = "\033[1;31m%.2f\033[0m" % now_money_flow_bs
-                        else:
-                            now_money_flow_bs = "\033[1;33m%.2f\033[0m" % now_money_flow_bs
+                            # 增长倍数
+                            if float(now_money_flow_bs) > 2.5:
+                                now_money_flow_bs = "\033[1;31m%.2f\033[0m" % now_money_flow_bs
+                            else:
+                                now_money_flow_bs = "\033[1;33m%.2f\033[0m" % now_money_flow_bs
 
-                        # 当前净流入
-                        if self.now_format_stock_dict[code]['jlr'] > 1000:
-                            now_jlr = "\033[1;31m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
-                        elif self.now_format_stock_dict[code]['jlr'] >= 500:
-                            now_jlr = "\033[1;33m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
-                        elif self.now_format_stock_dict[code]['jlr'] <= 100:
-                            now_jlr = "\033[1;32m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
-                        else:
-                            now_jlr = self.now_format_stock_dict[code]['jlr']
+                            # 当前净流入
+                            if self.now_format_stock_dict[code]['jlr'] > 1000:
+                                now_jlr = "\033[1;31m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
+                            elif self.now_format_stock_dict[code]['jlr'] >= 500:
+                                now_jlr = "\033[1;33m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
+                            elif self.now_format_stock_dict[code]['jlr'] <= 100:
+                                now_jlr = "\033[1;32m%.2f\033[0m" % self.now_format_stock_dict[code]['jlr']
+                            else:
+                                now_jlr = self.now_format_stock_dict[code]['jlr']
 
-                        # 主力排名
-                        if self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrank_5d'] and self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrannk_10d']:
-                            zlrank_today = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
-                        elif self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrank_5d']:
-                            zlrank_today = "\033[1;33m%s\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
-                        else:
-                            zlrank_today = self.now_format_stock_dict[code]['zlrank_today']
+                            # 主力排名
+                            if self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrank_5d'] and self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrannk_10d']:
+                                zlrank_today = "\033[1;31m%s\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
+                            elif self.now_format_stock_dict[code]['zlrank_today'] < self.now_format_stock_dict[code]['zlrank_5d']:
+                                zlrank_today = "\033[1;33m%s\033[0m" % self.now_format_stock_dict[code]['zlrank_today']
+                            else:
+                                zlrank_today = self.now_format_stock_dict[code]['zlrank_today']
 
-                        # 资金动向
-                        if self.now_format_stock_dict[code]['zjdx1'] == 1:
-                            zjdx1 = "\033[1;31m增仓\033[0m"
-                        elif self.now_format_stock_dict[code]['zjdx1'] == 0:
-                            zjdx1 = "\033[1;32m减仓\033[0m"
-                        else:
-                            zjdx1 = "中立"
+                            # 资金动向
+                            if self.now_format_stock_dict[code]['zjdx1'] == 1:
+                                zjdx1 = "\033[1;31m增仓\033[0m"
+                            elif self.now_format_stock_dict[code]['zjdx1'] == 0:
+                                zjdx1 = "\033[1;32m减仓\033[0m"
+                            else:
+                                zjdx1 = "中立"
 
-                        # 行业动向
-                        if self.now_format_stock_dict[code]['hydx1'] == 1:
-                            hydx1 = "\033[1;31m增仓\033[0m"
-                        elif self.now_format_stock_dict[code]['hydx1'] == 0:
-                            hydx1 = "\033[1;32m减仓\033[0m"
-                        else:
-                            hydx1 = "中立"
+                            # 行业动向
+                            if self.now_format_stock_dict[code]['hydx1'] == 1:
+                                hydx1 = "\033[1;31m增仓\033[0m"
+                            elif self.now_format_stock_dict[code]['hydx1'] == 0:
+                                hydx1 = "\033[1;32m减仓\033[0m"
+                            else:
+                                hydx1 = "中立"
 
-                        # 今日打败
-                        if float(self.now_format_stock_dict[code]['drbx']) >= 95:
-                            drbx = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['drbx'])
-                        else:
-                            drbx = float(self.now_format_stock_dict[code]['drbx'])
+                            # 今日打败
+                            if float(self.now_format_stock_dict[code]['drbx']) >= 95:
+                                drbx = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['drbx'])
+                            else:
+                                drbx = float(self.now_format_stock_dict[code]['drbx'])
 
-                        # 上涨概率
-                        if float(self.now_format_stock_dict[code]['crsl']) >= 48:
-                            crsl = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['crsl'])
-                        else:
-                            crsl = "%.2f" % float(self.now_format_stock_dict[code]['crsl'])
+                            # 上涨概率
+                            if float(self.now_format_stock_dict[code]['crsl']) >= 48:
+                                crsl = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['crsl'])
+                            else:
+                                crsl = "%.2f" % float(self.now_format_stock_dict[code]['crsl'])
 
-                        # 市场关注度
-                        if self.now_format_stock_dict[code]['focus'] >= 85:
-                            focus = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['focus'])
-                        else:
-                            focus = "%.2f" % float(self.now_format_stock_dict[code]['focus'])
+                            # 市场关注度
+                            if self.now_format_stock_dict[code]['focus'] >= 85:
+                                focus = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['focus'])
+                            else:
+                                focus = "%.2f" % float(self.now_format_stock_dict[code]['focus'])
 
-                        # 参与意愿
-                        if self.now_format_stock_dict[code]['cyyy'] > 0:
-                            cyyy = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['cyyy'])
-                        else:
-                            cyyy = "%.2f" % float(self.now_format_stock_dict[code]['cyyy'])
+                            # 参与意愿
+                            if self.now_format_stock_dict[code]['cyyy'] > 0:
+                                cyyy = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['cyyy'])
+                            else:
+                                cyyy = "%.2f" % float(self.now_format_stock_dict[code]['cyyy'])
 
-                        # 平均盈亏
-                        if self.now_format_stock_dict[code]['pjyk'] <= 0:
-                            pjyk = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['pjyk'])
-                        else:
-                            pjyk = "%.2f" % self.now_format_stock_dict[code]['pjyk']
+                            # 平均盈亏
+                            if self.now_format_stock_dict[code]['pjyk'] <= 0:
+                                pjyk = "\033[1;31m%.2f\033[0m" % float(self.now_format_stock_dict[code]['pjyk'])
+                            else:
+                                pjyk = "%.2f" % self.now_format_stock_dict[code]['pjyk']
 
-                        if '流出' in note:
-                            # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s 行业动向:%s\n" % (
-                                                                                                                    code, \
-                                                                                                                    self.now_format_stock_dict[code]['name'], \
-                                                                                                                    score, \
-                                                                                                                    rank, \
-                                                                                                                    rankup, \
-                                                                                                                    drbx, \
-                                                                                                                    crsl, \
-                                                                                                                    focus, \
-                                                                                                                    cyyy, \
-                                                                                                                    pjyk, \
-                                                                                                                    self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                    zjdx1, \
-                                                                                                                    hydx1
+                            if '流出' in note:
+                                # 第一行: 市场分析
+                                msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s 行业动向:%s\n" % (
+                                                                                                                        code, \
+                                                                                                                        self.now_format_stock_dict[code]['name'], \
+                                                                                                                        score, \
+                                                                                                                        rank, \
+                                                                                                                        rankup, \
+                                                                                                                        drbx, \
+                                                                                                                        crsl, \
+                                                                                                                        focus, \
+                                                                                                                        cyyy, \
+                                                                                                                        pjyk, \
+                                                                                                                        self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                        zjdx1, \
+                                                                                                                        hydx1
 
-                            )
+                                )
 
-                            # 第二行: 涨跌状况
-                            msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;32m%s\033[0m, 流出倍数:%s\n" % (
-                                                                                                                    code, \
-                                                                                                                    self.now_format_stock_dict[code]['name'], \
-                                                                                                                    now_trade, \
-                                                                                                                    float(self.now_format_stock_dict[code]['zlcb']), \
-                                                                                                                    float(self.now_format_stock_dict[code]['sccb']), \
-                                                                                                                    now_zdf, \
-                                                                                                                    now_jlr, \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_5d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_10d'], \
-                                                                                                                    now2zlcb, \
-                                                                                                                    zl_nowto20, \
-                                                                                                                    zl_20to60, \
-                                                                                                                    note, \
-                                                                                                                    now_money_flow_bs
-                            )
-                            msg += "[%s][%s][基本面] %s\n" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['value_summary'])
-                            msg += "[%s][%s][资金面] %s" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['summary'])
+                                # 第二行: 涨跌状况
+                                msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;32m%s\033[0m, 流出倍数:%s\n" % (
+                                                                                                                        code, \
+                                                                                                                        self.now_format_stock_dict[code]['name'], \
+                                                                                                                        now_trade, \
+                                                                                                                        float(self.now_format_stock_dict[code]['zlcb']), \
+                                                                                                                        float(self.now_format_stock_dict[code]['sccb']), \
+                                                                                                                        now_zdf, \
+                                                                                                                        now_jlr, \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_5d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_10d'], \
+                                                                                                                        now2zlcb, \
+                                                                                                                        zl_nowto20, \
+                                                                                                                        zl_20to60, \
+                                                                                                                        note, \
+                                                                                                                        now_money_flow_bs
+                                )
+                                msg += "[%s][%s][基本面] %s\n" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['value_summary'])
+                                msg += "[%s][%s][资金面] %s" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['summary'])
 
-                            """
-                            msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%s万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
-                                                                                                                    code, \
-                                                                                                                    self.now_format_stock_dict[code]['name'], \
-                                                                                                                    now_zdf, \
-                                                                                                                    now_trade, \
-                                                                                                                    self.now_format_stock_dict[code]['zlcb'], \
-                                                                                                                    self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                    now_jlr, \
-                                                                                                                    score, \
-                                                                                                                    rank, \
-                                                                                                                    zlrank_today, \
-                                                                                                                    self.now_format_stock_dict[code]['zlrank_5d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zlrannk_10d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_5d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_10d'], \
-                                                                                                                    score, \
-                                                                                                                    rank, \
-                                                                                                                    now2zlcb, \
-                                                                                                                    zl_nowto20, \
-                                                                                                                    zl_20to60, \
-                                                                                                                    note, \
-                                                                                                                    now_money_flow_bs
-                            )
-                            """
-                        else:
-                            # 第一行: 市场分析
-                            msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s 行业动向:%s\n" % (
-                                                                                                                    code, \
-                                                                                                                    self.now_format_stock_dict[code]['name'], \
-                                                                                                                    score, \
-                                                                                                                    rank, \
-                                                                                                                    rankup, \
-                                                                                                                    drbx, \
-                                                                                                                    crsl, \
-                                                                                                                    focus, \
-                                                                                                                    cyyy, \
-                                                                                                                    pjyk, \
-                                                                                                                    self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                    zjdx1, \
-                                                                                                                    hydx1
+                                """
+                                msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%s万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;34m%s\033[0m, 流出倍数:%s" % ( 
+                                                                                                                        code, \
+                                                                                                                        self.now_format_stock_dict[code]['name'], \
+                                                                                                                        now_zdf, \
+                                                                                                                        now_trade, \
+                                                                                                                        self.now_format_stock_dict[code]['zlcb'], \
+                                                                                                                        self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                        now_jlr, \
+                                                                                                                        score, \
+                                                                                                                        rank, \
+                                                                                                                        zlrank_today, \
+                                                                                                                        self.now_format_stock_dict[code]['zlrank_5d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zlrannk_10d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_5d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_10d'], \
+                                                                                                                        score, \
+                                                                                                                        rank, \
+                                                                                                                        now2zlcb, \
+                                                                                                                        zl_nowto20, \
+                                                                                                                        zl_20to60, \
+                                                                                                                        note, \
+                                                                                                                        now_money_flow_bs
+                                )
+                                """
+                            else:
+                                # 第一行: 市场分析
+                                msg = "[%s][%s][市场分析] 得分:%s, 昨日市场排名:%s[%s], 打败 %s 的股票, 今日上涨概率:%s , 市场关注度:%s 参与意愿:%s 平均盈亏:%s 控盘:%s 资金动向:%s 行业动向:%s\n" % (
+                                                                                                                        code, \
+                                                                                                                        self.now_format_stock_dict[code]['name'], \
+                                                                                                                        score, \
+                                                                                                                        rank, \
+                                                                                                                        rankup, \
+                                                                                                                        drbx, \
+                                                                                                                        crsl, \
+                                                                                                                        focus, \
+                                                                                                                        cyyy, \
+                                                                                                                        pjyk, \
+                                                                                                                        self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                        zjdx1, \
+                                                                                                                        hydx1
 
-                            )
+                                )
 
-                            # 第二行: 涨跌状况
-                            msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;31m%s\033[0m, 增长倍数:%s\n" % (
-                                                                                                                    code, \
-                                                                                                                    self.now_format_stock_dict[code]['name'], \
-                                                                                                                    now_trade, \
-                                                                                                                    float(self.now_format_stock_dict[code]['zlcb']), \
-                                                                                                                    float(self.now_format_stock_dict[code]['sccb']), \
-                                                                                                                    now_zdf, \
-                                                                                                                    now_jlr, \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_5d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_10d'], \
-                                                                                                                    now2zlcb, \
-                                                                                                                    zl_nowto20, \
-                                                                                                                    zl_20to60, \
-                                                                                                                    note, \
-                                                                                                                    now_money_flow_bs
-                            )
-                            msg += "[%s][%s][基本面] %s\n" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['value_summary'])
-                            msg += "[%s][%s][资金面] %s" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['summary'])
+                                # 第二行: 涨跌状况
+                                msg += "[%s][%s][涨跌状况] 价格(现/主/市)[%s/%.2f/%.2f][%s] 净流入:%s万, 近期涨跌幅(5/10):%s/%s, now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s,  资金呈 \033[1;31m%s\033[0m, 增长倍数:%s\n" % (
+                                                                                                                        code, \
+                                                                                                                        self.now_format_stock_dict[code]['name'], \
+                                                                                                                        now_trade, \
+                                                                                                                        float(self.now_format_stock_dict[code]['zlcb']), \
+                                                                                                                        float(self.now_format_stock_dict[code]['sccb']), \
+                                                                                                                        now_zdf, \
+                                                                                                                        now_jlr, \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_5d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_10d'], \
+                                                                                                                        now2zlcb, \
+                                                                                                                        zl_nowto20, \
+                                                                                                                        zl_20to60, \
+                                                                                                                        note, \
+                                                                                                                        now_money_flow_bs
+                                )
+                                msg += "[%s][%s][基本面] %s\n" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['value_summary'])
+                                msg += "[%s][%s][资金面] %s" % (code, self.now_format_stock_dict[code]['name'], self.now_format_stock_dict[code]['summary'])
 
-                            """
-                            msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%s万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
-                                                                                                                    code, \
-                                                                                                                    self.now_format_stock_dict[code]['name'], \
-                                                                                                                    now_zdf, \
-                                                                                                                    now_trade, \
-                                                                                                                    self.now_format_stock_dict[code]['zlcb'], \
-                                                                                                                    self.now_format_stock_dict[code]['kpType'], \
-                                                                                                                    now_jlr, \
-                                                                                                                    score, \
-                                                                                                                    rank, \
-                                                                                                                    zlrank_today, \
-                                                                                                                    self.now_format_stock_dict[code]['zlrank_5d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zlrannk_10d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_5d'], \
-                                                                                                                    self.now_format_stock_dict[code]['zdf_10d'], \
-                                                                                                                    now2zlcb, \
-                                                                                                                    zl_nowto20, \
-                                                                                                                    zl_20to60, \
-                                                                                                                    note, \
-                                                                                                                    now_money_flow_bs)
-                            """
-                        print msg
-                        print "-"*150
+                                """
+                                msg = "[%s][%s][%s][%s/%.2f][%s] 当前净流入:%s万 得分:%s 排名:%s 资金排名(1/5/10):%s/%s/%s 近期涨跌幅(5/10):%s/%s now2zlcb:%s zl_nowto20:%s zl_ma20to60:%s 自首次监测到异动，资金呈 \033[1;31m%s\033[0m, 增长倍数:%s" % (
+                                                                                                                        code, \
+                                                                                                                        self.now_format_stock_dict[code]['name'], \
+                                                                                                                        now_zdf, \
+                                                                                                                        now_trade, \
+                                                                                                                        self.now_format_stock_dict[code]['zlcb'], \
+                                                                                                                        self.now_format_stock_dict[code]['kpType'], \
+                                                                                                                        now_jlr, \
+                                                                                                                        score, \
+                                                                                                                        rank, \
+                                                                                                                        zlrank_today, \
+                                                                                                                        self.now_format_stock_dict[code]['zlrank_5d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zlrannk_10d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_5d'], \
+                                                                                                                        self.now_format_stock_dict[code]['zdf_10d'], \
+                                                                                                                        now2zlcb, \
+                                                                                                                        zl_nowto20, \
+                                                                                                                        zl_20to60, \
+                                                                                                                        note, \
+                                                                                                                        now_money_flow_bs)
+                                """
+                            print msg
+                            print "-"*150
+                            _is_filter = True
                 else:
                     print code
 
                 for stock in sort_code_list[code]:
-                    if single == 1 or self.format_all is True:
+                    if (single == 1 or self.format_all is True) and _is_filter:
                         if '出现大幅流入' in stock:
                             stock = "\033[1;34m%s\033[0m" % stock
                             print stock
                         else:
                             stock = "\033[1;32m%s\033[0m" % stock
                             print stock
-                
-                if single == 1 or self.format_all is True:
+
+                if (single == 1 or self.format_all is True) and _is_filter:
                     line = "\033[1;31m_\033[0m"
                     print line*150
             except Exception as e:
@@ -2271,6 +2285,8 @@ class StockNet():
 
             parser.add_option("--format_result", dest="format_result", default=False, help=u"查看结果, --format_result result/20210129_money_flow.txt")
 
+            parser.add_option("--conditions_filter", action="store_true", dest="conditions_filter", default=False, help=u"是否进行过滤条件筛选")
+
             parser.add_option("--add2zx", dest="add2zx", default=False, help=u"添加到东方财富自选, --add2zx result/2021-02-03/20210129_money_flow.txt")
 
             parser.add_option("--format_loop", action="store_true", dest="format_loop", default=False, help=u"是否循环查看异动股票")
@@ -2284,6 +2300,8 @@ class StockNet():
             else:
                 if options.format_result:
                     result_file = options.format_result
+                    self.conditions_filter = options.conditions_filter
+
                     if options.format_loop:
                         self.format_loop = options.format_loop
                     else:
