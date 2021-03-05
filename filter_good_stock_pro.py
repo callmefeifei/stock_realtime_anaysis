@@ -3089,8 +3089,8 @@ class StockNet():
         rule1_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0].__len__()
         rule1_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0])
         rule1_up_avg = rule1_up_sum/rule1_up
-        rule1_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
-        rule1_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']<0])
+        rule1_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule1_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0])
         rule1_down_avg = rule1_down_sum/rule1_down
         # print('[+] 命中 "\033[1;31m@@@@@\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (,))
         print('[+] 命中 "\033[1;31m昨日macd为正\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule1_num,rule1_up,rule1_up_avg,rule1_down,rule1_down_avg))
@@ -3140,30 +3140,30 @@ class StockNet():
             - 多少上涨
             - 多少下跌
         """
-        rule4_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0].__len__()
-        rule4_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0].__len__()
-        rule4_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0])
+        rule4_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0].__len__()
+        rule4_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule4_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']>0])
         rule4_up_avg = rule4_up_sum/rule4_up
-        rule4_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
-        rule4_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0])
+        rule4_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule4_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']<0])
         rule4_down_avg = rule4_down_sum/rule4_down
         print('[+] 命中 "\033[1;31m昨日macd为负\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule4_num,rule4_up,rule4_up_avg,rule4_down,rule4_down_avg))
 
-        rule5_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01].__len__()
-        rule5_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
-        rule5_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0])
+        rule5_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01].__len__()
+        rule5_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule5_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0])
         rule5_up_avg = rule5_up_sum/rule5_up
-        rule5_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
-        rule5_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0])
+        rule5_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule5_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0])
         rule5_down_avg = rule5_down_sum/rule5_down
         print('[+] 命中 "\033[1;31m昨日macd为负且diff>-0.01\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule5_num,rule5_up,rule5_up_avg,rule5_down,rule5_down_avg))
 
-        rule6_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01].__len__()
-        rule6_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
-        rule6_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0])
+        rule6_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01].__len__()
+        rule6_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule6_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0])
         rule6_up_avg = rule6_up_sum/rule6_up
-        rule6_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
-        rule6_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0])
+        rule6_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule6_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0])
         rule6_down_avg = rule6_down_sum/rule6_down
         print('[+] 命中 "\033[1;31m昨日macd为负且diff<-0.01\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule6_num,rule6_up,rule6_up_avg,rule6_down,rule6_down_avg))
 
