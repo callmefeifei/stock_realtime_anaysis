@@ -2990,10 +2990,10 @@ class StockNet():
         total_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys()])
 
         #当前跌数
-        down_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['zdf'] < 0])
+        down_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys() and float(self.now_format_stock_dict[i]['zdf']) < 0])
 
         #当前涨数
-        up_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['zdf'] > 0])
+        up_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys() and float(self.now_format_stock_dict[i]['zdf']) > 0])
 
         # 大跌
         if down_stock_num > total_stock_num / 1.6:
@@ -3015,10 +3015,10 @@ class StockNet():
         total_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys()])
 
         #昨日跌数
-        down_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['yestoday_zdf'] < 0])
+        down_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys() and float(self.now_format_stock_dict[i]['yestoday_zdf']) < 0])
 
         #昨日涨数
-        up_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['yestoday_zdf'] > 0])
+        up_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys() and float(self.now_format_stock_dict[i]['yestoday_zdf']) > 0])
 
         # 大跌
         if down_stock_num > total_stock_num / 1.6:
@@ -3037,6 +3037,7 @@ class StockNet():
 
         print "[*] 昨日: %s | 当前: %s" % (zr_hq, jr_hq)
         print "-"*150
+
         """
           - 涨停数
           - 跌停数
