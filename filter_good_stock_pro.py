@@ -3051,8 +3051,8 @@ class StockNet():
         rule0_up = "\033[1;31m%s\033[0m" % rule0_up
         rule0_down = "\033[1;32m%s\033[0m" % rule0_down
 
-        rule0_up_list = 
-        rule0_down_list = 
+        rule0_up_list = [ code for code in self.now_format_stock_dict if (code.startswith('300') and self.now_format_stock_dict[code]['zdf'] >= 19.9) or (code.startswith('300') is False and self.now_format_stock_dict[code]['zdf'] >= 9.9)]
+        rule0_down_list = [ code for code in self.now_format_stock_dict if (code.startswith('300') and self.now_format_stock_dict[code]['zdf'] <= -19.9) or (code.startswith('300') is False and self.now_format_stock_dict[code]['zdf'] <= -9.9)]
 
         print('[!] 当前上涨 %s 支, 下跌 %s支; 其中涨停 %s 支, 跌停 %s 支' % (rule0_up, rule0_down, rule0_up_num, rule0_down_num))
         print "-"*150
@@ -3089,8 +3089,8 @@ class StockNet():
         rule1_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0].__len__()
         rule1_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0])
         rule1_up_avg = rule1_up_sum/rule1_up
-        rule1_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
-        rule1_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0])
+        rule1_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule1_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])<0 and self.now_format_stock_dict[i]['zdf']<0])
         rule1_down_avg = rule1_down_sum/rule1_down
         # print('[+] 命中 "\033[1;31m@@@@@\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (,))
         print('[+] 命中 "\033[1;31m昨日macd为正\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule1_num,rule1_up,rule1_up_avg,rule1_down,rule1_down_avg))
