@@ -3050,7 +3050,10 @@ class StockNet():
         rule0_down = [ self.now_format_stock_dict[code]['zdf']>0 for code in self.now_format_stock_dict ].count(False)
         rule0_up = "\033[1;31m%s\033[0m" % rule0_up
         rule0_down = "\033[1;32m%s\033[0m" % rule0_down
-        
+
+        rule0_up_list = 
+        rule0_down_list = 
+
         print('[!] 当前上涨 %s 支, 下跌 %s支; 其中涨停 %s 支, 跌停 %s 支' % (rule0_up, rule0_down, rule0_up_num, rule0_down_num))
         print "-"*150
         """
@@ -3072,7 +3075,7 @@ class StockNet():
         rule18_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] < 0 and self.now_format_stock_dict[code]['zdf'] > -2 ].__len__()
         print('[+] 命中 "\033[1;31m涨幅小于0大于-2\033[0m" 的股票 %s 支' % rule18_num)
         rule19_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] < -2 and self.now_format_stock_dict[code]['zdf'] > -5 ].__len__()
-        print('[+] 命中 "\033[1;31m涨幅小于0大于-5的股票\033[0m" 的股票 %s 支' % rule19_num)
+        print('[+] 命中 "\033[1;31m涨幅小于-2大于-5的股票\033[0m" 的股票 %s 支' % rule19_num)
         rule20_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] < -5 ].__len__()
         print('[+] 命中 "\033[1;31m涨幅小于-5的股票\033[0m" 的股票 %s 支' % rule20_num)
         print '-'*150
@@ -3512,7 +3515,10 @@ class StockNet():
             rule43_up_avg = 0
         rule43_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
         rule43_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 and float(self.now_format_stock_dict[code]['zdf'])<0])
-        rule43_down_avg = rule43_down_sum/rule43_down
+        try:
+            rule43_down_avg = rule43_down_sum/rule43_down
+        except:
+            rule43_down_avg = 0
 
         rule44_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 ].__len__()
         rule44_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
