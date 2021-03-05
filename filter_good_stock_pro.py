@@ -480,7 +480,7 @@ class StockNet():
             msg = "[-][stock_anaylse] Error : %s %s" % (code, e)
             if 'result' in str(e):
                 pass
-            print code, e
+            #print code, e
             #import pdb;pdb.set_trace()
 
         self.anaylse_data_count += 1
@@ -702,14 +702,15 @@ class StockNet():
                     if '大幅流出' not in note:
                         if money_flow_bs >= 10 and float(_jlr) > 100:
                             is_continue_in = self.yd_count(code)
-                            self.notify("发现异动股票", content, True, code)
+                            #self.notify("发现异动股票", content, True, code)
                         else:
                             is_continue_in = self.yd_count(code)
-                            self.notify("发现异动股票", content, self.is_notify, code)
+                            #self.notify("发现异动股票", content, self.is_notify, code)
 
                         # 持续流入
                         if is_continue_in:
-                            self.notify("股票正在持续流入", content, True, code)
+                            #self.notify("股票正在持续流入", content, True, code)
+                            pass
 
                     self.alarm_db[code] = {in_money_2:True}
                 else:
@@ -719,14 +720,15 @@ class StockNet():
                         if '大幅流出' not in note:
                             if money_flow_bs >= 10 and float(_jlr) > 100:
                                 is_continue_in = self.yd_count(code)
-                                self.notify("发现异动股票", content, True, code)
+                                #self.notify("发现异动股票", content, True, code)
                             else:
                                 is_continue_in = self.yd_count(code)
-                                self.notify("发现异动股票", content, self.is_notify, code)
+                                #self.notify("发现异动股票", content, self.is_notify, code)
 
                             # 持续流入
                             if is_continue_in:
-                                self.notify("股票正在持续流入", content, True, code)
+                                #self.notify("股票正在持续流入", content, True, code)
+                                pass
 
                         self.alarm_db[code] = {in_money_2:True}
 
@@ -1359,6 +1361,20 @@ class StockNet():
                     #print(2,e)
                     continue
 
+            # 获取当日股票市值
+            url = "http://18.push2.eastmoney.com/api/qt/clist/get?cb=&pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:2,m:1+t:23&fields=f12,f14,f20"
+            data = self.s.get(url, timeout=5).json()['data']['diff']
+            for stock in data:
+                try:
+                    code = stock['f12']                         # 股票代码
+                    name = stock['f14']                         # 股票名称
+                    volume = float(stock['f20'])/100000000       # 市值
+
+                    if code in self.now_stock_dict.keys():
+                        self.now_stock_dict[code]['volume'] = volume
+                except:
+                    continue
+
             # 生成今日股票数据列表
             self.now_stock_list = []
             for i in self.now_stock_dict:
@@ -1604,20 +1620,10 @@ class StockNet():
                     else:
                         rule6_list.append(i)
 
-            # 然后按昨日官方排名排序, 获取top50
-            for i in sorted(self.now_stock_list, key=lambda x:x['rank'], reverse=False):
-                if len(rule6_list) >= 100:
-                    break
-                else:
-                    # 排除st、排除涨跌幅 > 5 的
-                    if 'ST' in i['name'] or i['zdf'] > 5 or i['code'].startswith("68") or i in rule6_list:
-                            continue
-                    else:
-                        rule6_list.append(i)
 
             # 最后按实时资金净流入排行, 获取top50
             for i in sorted(self.now_stock_list, key=lambda x:x['jlr'], reverse=True):
-                if len(rule6_list) >= 150:
+                if len(rule6_list) >= 100:
                     break
                 else:
                     # 排除st、排除涨跌幅 > 5 的
@@ -1628,29 +1634,15 @@ class StockNet():
 
             # 然后分别获取3个(rank、zlrank_today、score)排序top10
             _rule6_list = []
-            for i in sorted(rule6_list, key=lambda x:x['rank'], reverse=False):
-                if len(_rule6_list) >= 10:
-                    break
-                else:
-                    if i in _rule6_list:continue
-                    _rule6_list.append(i)
-
             for i in sorted(rule6_list, key=lambda x:x['zlrank_today'], reverse=False):
-                if len(_rule6_list) >= 20:
-                    break
-                else:
-                    if i in _rule6_list:continue
-                    _rule6_list.append(i)
-
-            for i in sorted(rule6_list, key=lambda x:x['score'], reverse=True):
-                if len(_rule6_list) >= 30:
+                if len(_rule6_list) >= 25:
                     break
                 else:
                     if i in _rule6_list:continue
                     _rule6_list.append(i)
 
             for i in sorted(rule6_list, key=lambda x:x['jlr'], reverse=True):
-                if len(_rule6_list) >= 40:
+                if len(_rule6_list) >= 25:
                     break
                 else:
                     if i in _rule6_list:continue
@@ -1814,6 +1806,7 @@ class StockNet():
                             self.add2matched("super_kdj", code)
                             self.write_result("super_kdj", content)
                             self.rule_matched_list['super_kdj'].append(code)
+                            self.notify("异动首次命中规则, 快关注!!", content, True, code)
 
                 #                          KDJ指标                  
                 #- 昨日kdj
@@ -1887,6 +1880,7 @@ class StockNet():
                             self.add2matched("rule8", code)
                             self.write_result("rule8", content)
                             self.rule_matched_list['rule8'].append(code)
+                            self.notify("异动首次命中规则, 快关注!!", content, True, code)
 
                 # rule9. kdj+macd指标
                 """
@@ -1911,6 +1905,7 @@ class StockNet():
                             self.add2matched("rule9", code)
                             self.write_result("rule9", content)
                             self.rule_matched_list['rule9'].append(code)
+                            self.notify("异动首次命中规则, 快关注!!", content, True, code)
 
                 # rule10. kdj超跌指标
                 """
@@ -1946,6 +1941,7 @@ class StockNet():
                         self.add2matched("rule10", code)
                         self.write_result("rule10", content)
                         self.rule_matched_list['rule10'].append(code)
+                        self.notify("异动首次命中规则, 快关注!!", content, True, code)
 
             except Exception as e:
                 try:
@@ -2093,6 +2089,20 @@ class StockNet():
                     self.now_format_stock_dict[code]['ddjlr'] = ddjlr
                     self.now_format_stock_dict[code]['zdjlr'] = zdjlr
                     self.now_format_stock_dict[code]['xdjlr'] = xdjlr
+            except:
+                continue
+
+        # 获取当日股票市值
+        url = "http://18.push2.eastmoney.com/api/qt/clist/get?cb=&pn=1&pz=10000&po=1&np=1&ut=bd1d9ddb04089700cf9c27f6f7426281&fltt=2&invt=2&fid=f3&fs=m:0+t:6,m:0+t:13,m:0+t:80,m:1+t:2,m:1+t:23&fields=f12,f14,f20"
+        data = self.s.get(url, timeout=5).json()['data']['diff']
+        for stock in data:
+            try:
+                code = stock['f12']                         # 股票代码
+                name = stock['f14']                         # 股票名称
+                volume = float(stock['f20'])/100000000       # 市值
+
+                if code in self.now_format_stock_dict.keys():
+                    self.now_format_stock_dict[code]['volume'] = volume
             except:
                 continue
 
@@ -2803,7 +2813,7 @@ class StockNet():
 
                     # macd_info
                     macd_info = "last_macd:[%s, %s, %s] 近5平均macd:%s" % (macd, macd_diff, macd_dea, macd_avg)
-                    if float(_macd_avg[4]) >0 and float(_macd_avg[4]) > float(_macd_avg[3]) and float(_macd_avg[3]) > float(_macd_avg[2]) and float(_macd_avg[4]) > float(_macd_avg[2]) \
+                    if float(_macd_avg[4]) > float(_macd_avg[3]) and float(_macd_avg[3]) > float(_macd_avg[2]) and float(_macd_avg[4]) > float(_macd_avg[2]) \
                     and True in [float(i['macd'][0]) < 0 for i in self.stock_jx_data[code]]:
                         # red
                         macd_info = "\033[1;31m%s\033[0m" % macd_info
@@ -2931,6 +2941,679 @@ class StockNet():
                     self.close_signal = True
                     sys.exit()
 
+
+    def market_analyse(self):
+        """
+        分析指标详情
+        1. 当前行情情况,
+          - 大跌行情(1.5倍的都在跌)
+          - 大涨行情(1.5倍的都在涨)
+          - 中等偏上行情(小于1.5，大于1.9的在涨)
+          - 中等偏下行情(大于1.5)
+        """
+
+
+        # 数据补齐
+        # 1. macd
+        for i in self.now_format_stock_dict:
+            if 'jx_data' not in self.now_format_stock_dict[i].keys():
+                 self.now_format_stock_dict[i]['jx_data'] = [{'code':i, 'macd':[0,0,0], 'kdj':[0,0,0]}]
+
+
+        # 2. zdf
+        for i in self.now_format_stock_dict:
+            if 'zdf' not in self.now_format_stock_dict[i].keys():
+                self.now_format_stock_dict[i]['zdf'] = 0
+
+        # 3. jlr
+        for i in self.now_format_stock_dict:
+            if 'jlr' not in self.now_format_stock_dict[i].keys():
+                 self.now_format_stock_dict[i]['jlr'] = 0
+
+        # 4.ma5
+        for code in self.stock_jx_data:
+            if code in self.now_format_stock_dict.keys():
+                self.now_format_stock_dict[code]['ma5'] = self.stock_jx_data[code][-1]['ma5']
+
+        for i in self.now_format_stock_dict:
+            if 'ma5' not in self.now_format_stock_dict[i].keys():
+                 self.now_format_stock_dict[i]['ma5'] = 0
+
+        # 5.trade
+        for i in self.now_format_stock_dict:
+            if 'trade' not in self.now_format_stock_dict[i].keys():
+                 self.now_format_stock_dict[i]['trade'] = 0
+
+
+        # -------------------------------------- 今日
+        #当前总数
+        total_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys()])
+
+        #当前跌数
+        down_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['zdf'] < 0])
+
+        #当前涨数
+        up_stock_num = len([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if 'zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['zdf'] > 0])
+
+        # 大跌
+        if down_stock_num > total_stock_num / 1.6:
+            jr_hq = "\033[1;32m大跌行情\033[0m"
+        # 大涨
+        elif up_stock_num > total_stock_num / 1.6:
+            jr_hq = "\033[1;31m大涨行情\033[0m"
+        # 中等偏上
+        elif down_stock_num < up_stock_num:
+            jr_hq = "\033[1;33m中等偏上行情\033[0m"
+        # 中等偏下
+        elif down_stock_num > up_stock_num:
+            jr_hq = "\033[1;36m中等偏下行情\033[0m"
+        else:
+            jr_hq = "\033[1;37m其他情况\033[0m"
+
+        # -------------------------------------- 昨日
+        #昨日总数
+        total_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys()])
+
+        #昨日跌数
+        down_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['yestoday_zdf'] < 0])
+
+        #昨日涨数
+        up_stock_num = len([ self.now_format_stock_dict[i]['yestoday_zdf'] for i in self.now_format_stock_dict if 'yestoday_zdf' in self.now_format_stock_dict[i].keys() and self.now_format_stock_dict[i]['yestoday_zdf'] > 0])
+
+        # 大跌
+        if down_stock_num > total_stock_num / 1.6:
+            zr_hq = "\033[1;32m大跌行情\033[0m"
+        # 大涨
+        elif up_stock_num > total_stock_num / 1.6:
+            zr_hq = "\033[1;31m大涨行情\033[0m"
+        # 中等偏上
+        elif down_stock_num < up_stock_num:
+            zr_hq = "\033[1;33m中等偏上行情\033[0m"
+        # 中等偏下
+        elif down_stock_num > up_stock_num:
+            zr_hq = "\033[1;36m中等偏下行情\033[0m"
+        else:
+            zr_hq = "\033[1;37m其他情况\033[0m"
+
+        print "[*] 昨日: %s | 当前: %s" % (zr_hq, jr_hq)
+        print "-"*150
+        """
+          - 涨停数
+          - 跌停数
+        """
+        rule0_up_num = [ code for code in self.now_format_stock_dict if (code.startswith('300') and self.now_format_stock_dict[code]['zdf'] >= 19.9) or (code.startswith('300') is False and self.now_format_stock_dict[code]['zdf'] >= 9.9)].__len__()
+        rule0_down_num = [ code for code in self.now_format_stock_dict if (code.startswith('300') and self.now_format_stock_dict[code]['zdf'] <= -19.9) or (code.startswith('300') is False and self.now_format_stock_dict[code]['zdf'] <= -9.9)].__len__()
+        rule0_up_num = "\033[1;31m%s\033[0m" % rule0_up_num
+        rule0_down_num = "\033[1;32m%s\033[0m" % rule0_down_num
+        rule0_up = [ self.now_format_stock_dict[code]['zdf']>0 for code in self.now_format_stock_dict ].count(True)
+        rule0_down = [ self.now_format_stock_dict[code]['zdf']>0 for code in self.now_format_stock_dict ].count(False)
+        rule0_up = "\033[1;31m%s\033[0m" % rule0_up
+        rule0_down = "\033[1;32m%s\033[0m" % rule0_down
+        
+        print('[!] 当前上涨 %s 支, 下跌 %s支; 其中涨停 %s 支, 跌停 %s 支' % (rule0_up, rule0_down, rule0_up_num, rule0_down_num))
+        print "-"*150
+        """
+          - 涨幅大于0 < 2的股票
+          - 涨幅大于2 < 5的股票
+          - 涨幅大于5的股票
+
+          - 涨幅小于<0 > -2的股票
+          - 涨幅小于<0 > -5的股票
+          - 涨幅小于-5的股票
+
+        """
+        rule15_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] > 0 and self.now_format_stock_dict[code]['zdf'] < 2 ].__len__()
+        print('[+] 命中 "\033[1;31m涨幅大于0小于2\033[0m" 的股票 %s 支' % rule15_num)
+        rule16_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] > 2 and self.now_format_stock_dict[code]['zdf'] < 5 ].__len__()
+        print('[+] 命中 "\033[1;31m涨幅大于2小于5\033[0m" 的股票 %s 支' % rule16_num)
+        rule17_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] > 5 and self.now_format_stock_dict[code]['zdf'] < 1000 ].__len__()
+        print('[+] 命中 "\033[1;31m涨幅大于5\033[0m" 的股票 %s 支' % rule17_num)
+        rule18_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] < 0 and self.now_format_stock_dict[code]['zdf'] > -2 ].__len__()
+        print('[+] 命中 "\033[1;31m涨幅小于0大于-2\033[0m" 的股票 %s 支' % rule18_num)
+        rule19_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] < -2 and self.now_format_stock_dict[code]['zdf'] > -5 ].__len__()
+        print('[+] 命中 "\033[1;31m涨幅小于0大于-5的股票\033[0m" 的股票 %s 支' % rule19_num)
+        rule20_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf'] < -5 ].__len__()
+        print('[+] 命中 "\033[1;31m涨幅小于-5的股票\033[0m" 的股票 %s 支' % rule20_num)
+        print '-'*150
+
+        """
+          - 昨日macd为正的涨跌情况, 以及平均涨跌幅
+            - 多少上涨
+            - 多少下跌
+        """
+        rule1_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0].__len__()
+        rule1_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule1_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0])
+        rule1_up_avg = rule1_up_sum/rule1_up
+        rule1_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule1_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0])
+        rule1_down_avg = rule1_down_sum/rule1_down
+        # print('[+] 命中 "\033[1;31m@@@@@\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (,))
+        print('[+] 命中 "\033[1;31m昨日macd为正\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule1_num,rule1_up,rule1_up_avg,rule1_down,rule1_down_avg))
+
+        """
+          - 昨日macd为正且diff>-0.01的涨跌情况
+            - 多少上涨
+            - 多少下跌
+
+        """
+        rule2_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01].__len__()
+        rule2_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule2_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0])
+        rule2_up_avg = rule2_up_sum/rule2_up
+        rule2_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule2_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0])
+        rule2_down_avg = rule2_down_sum/rule2_down
+        print('[+] 命中 "\033[1;31m昨日macd为正且diff>-0.01\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule2_num,rule2_up,rule2_up_avg,rule2_down,rule2_down_avg))
+
+
+        """
+
+          - 昨日macd为正且diff<-0.01的涨跌情况
+            - 多少上涨
+            - 多少下跌
+        """
+        rule3_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01].__len__()
+        rule3_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule3_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0])
+        rule3_up_avg = rule3_up_sum/rule3_up
+        rule3_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule3_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0])
+        rule3_down_avg = rule3_down_sum/rule3_down
+        print('[+] 命中 "\033[1;31m昨日macd为正且diff<-0.01\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule3_num,rule3_up,rule3_up_avg,rule3_down,rule3_down_avg))
+
+
+        """
+          - 昨日macd为负的涨跌情况
+            - 多少上涨
+            - 多少下跌
+
+          - 昨日macd为负且diff>-0.01的涨跌情况
+            - 多少上涨
+            - 多少下跌
+
+          - 昨日macd为负且diff<-0.01的涨跌情况
+            - 多少上涨
+            - 多少下跌
+        """
+        rule4_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0].__len__()
+        rule4_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule4_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']>0])
+        rule4_up_avg = rule4_up_sum/rule4_up
+        rule4_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule4_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and self.now_format_stock_dict[i]['zdf']<0])
+        rule4_down_avg = rule4_down_sum/rule4_down
+        print('[+] 命中 "\033[1;31m昨日macd为负\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule4_num,rule4_up,rule4_up_avg,rule4_down,rule4_down_avg))
+
+        rule5_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01].__len__()
+        rule5_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule5_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']>0])
+        rule5_up_avg = rule5_up_sum/rule5_up
+        rule5_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule5_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) > -0.01 and self.now_format_stock_dict[i]['zdf']<0])
+        rule5_down_avg = rule5_down_sum/rule5_down
+        print('[+] 命中 "\033[1;31m昨日macd为负且diff>-0.01\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule5_num,rule5_up,rule5_up_avg,rule5_down,rule5_down_avg))
+
+        rule6_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01].__len__()
+        rule6_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule6_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']>0])
+        rule6_up_avg = rule6_up_sum/rule6_up
+        rule6_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule6_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][0])>0 and float(self.now_format_stock_dict[i]['jx_data'][-1]['macd'][1]) < -0.01 and self.now_format_stock_dict[i]['zdf']<0])
+        rule6_down_avg = rule6_down_sum/rule6_down
+        print('[+] 命中 "\033[1;31m昨日macd为负且diff<-0.01\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule6_num,rule6_up,rule6_up_avg,rule6_down,rule6_down_avg))
+
+        """
+          - 昨日kdj平均值>0<30涨跌
+            - 多少上涨
+            - 多少下跌
+
+          - 昨日kdj平均值>30<50涨跌
+
+          - 昨日kdj平均值>50<80涨跌
+
+          - 昨日kdj平均值>80<100涨跌
+        """
+        rule7_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>0 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<30].__len__() 
+        rule7_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>0 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<30 and self.now_format_stock_dict[i]['zdf']>0].__len__() 
+        rule7_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>0 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<30 and self.now_format_stock_dict[i]['zdf']>0])
+        rule7_up_avg = rule7_up_sum/rule7_up
+        rule7_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>0 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<30 and self.now_format_stock_dict[i]['zdf']<0].__len__() 
+        rule7_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>0 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<30 and self.now_format_stock_dict[i]['zdf']<0])
+        rule7_down_avg = rule7_down_sum/rule7_down
+        print('[+] 命中 "\033[1;31m昨日kdj平均值>0<30\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule7_num,rule7_up,rule7_up_avg,rule7_down,rule7_down_avg))
+
+        rule8_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>30 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<50].__len__()
+        rule8_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>30 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<50 and self.now_format_stock_dict[i]['zdf']>0].__len__()
+        rule8_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>30 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<50 and self.now_format_stock_dict[i]['zdf']>0])
+        rule8_up_avg = rule8_up_sum/rule8_up
+        rule8_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>30 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<50 and self.now_format_stock_dict[i]['zdf']<0].__len__()
+        rule8_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>30 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<50 and self.now_format_stock_dict[i]['zdf']<0])
+        rule8_down_avg = rule8_down_sum/rule8_down
+        print('[+] 命中 "\033[1;31m昨日kdj平均值>30<50\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule8_num,rule8_up,rule8_up_avg,rule8_down,rule8_down_avg))
+
+        rule9_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>50 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<80].__len__() 
+        rule9_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>50 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<80 and self.now_format_stock_dict[i]['zdf']>0].__len__() 
+        rule9_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>50 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<80 and self.now_format_stock_dict[i]['zdf']>0])
+        rule9_up_avg = rule9_up_sum/rule9_up
+        rule9_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>50 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<80 and self.now_format_stock_dict[i]['zdf']<0].__len__() 
+        rule9_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>50 and sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3<80 and self.now_format_stock_dict[i]['zdf']<0])
+        rule9_down_avg = rule9_down_sum/rule9_down
+        print('[+] 命中 "\033[1;31m昨日kdj平均值>50<80\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule9_num,rule9_up,rule9_up_avg,rule9_down,rule9_down_avg))
+
+        rule10_num = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>80 ].__len__() 
+        rule10_up = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>80 and self.now_format_stock_dict[i]['zdf']>0 ].__len__() 
+        rule10_up_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>80 and self.now_format_stock_dict[i]['zdf']>0 ])
+        rule10_up_avg = rule10_up_sum/rule10_up
+        rule10_down = [ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>80 and self.now_format_stock_dict[i]['zdf']<0 ].__len__() 
+        rule10_down_sum = sum([ self.now_format_stock_dict[i]['zdf'] for i in self.now_format_stock_dict if sum([ float(j) for j in self.now_format_stock_dict[i]['jx_data'][-1]['kdj'] ])/3>80 and self.now_format_stock_dict[i]['zdf']<0 ])
+        rule10_down_avg = rule10_down_sum/rule10_down
+        print('[+] 命中 "\033[1;31m昨日kdj平均值>80<100\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule10_num,rule10_up,rule10_up_avg,rule10_down,rule10_down_avg))
+
+
+        """
+          - 市值大于150<300亿涨跌情况
+          - 市值大于300亿小于1000亿涨跌情况
+          - 市值大于1000亿的涨跌情况
+          - 市值小于150亿涨跌情况
+        """
+
+        rule11_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 150 and self.now_format_stock_dict[code]['volume'] < 300].__len__()
+        rule11_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 150 and self.now_format_stock_dict[code]['volume'] < 300 and self.now_format_stock_dict[code]['zdf']>0].__len__()
+        rule11_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 150 and self.now_format_stock_dict[code]['volume'] < 300 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule11_up_avg = rule11_up_sum/rule11_up
+        rule11_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 150 and self.now_format_stock_dict[code]['volume'] < 300 and self.now_format_stock_dict[code]['zdf']<0].__len__()
+        rule11_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 150 and self.now_format_stock_dict[code]['volume'] < 300 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule11_down_avg = rule11_down_sum/rule11_down
+        print('[+] 命中 "\033[1;31m市值大于150<300亿\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule11_num,rule11_up,rule11_up_avg,rule11_down,rule11_down_avg))
+
+        rule12_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 300 and self.now_format_stock_dict[code]['volume'] < 1000].__len__()
+        rule12_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 300 and self.now_format_stock_dict[code]['volume'] < 1000 and self.now_format_stock_dict[code]['zdf']>0].__len__()
+        rule12_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 300 and self.now_format_stock_dict[code]['volume'] < 1000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule12_up_avg = rule12_up_sum/rule12_up
+        rule12_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 300 and self.now_format_stock_dict[code]['volume'] < 1000 and self.now_format_stock_dict[code]['zdf']<0].__len__()
+        rule12_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 300 and self.now_format_stock_dict[code]['volume'] < 1000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule12_down_avg = rule12_down_sum/rule12_down
+        print('[+] 命中 "\033[1;31m市值大于300亿小于1000亿\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule12_num,rule12_up,rule12_up_avg,rule12_down,rule12_down_avg))
+
+        rule13_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 1000 and self.now_format_stock_dict[code]['volume'] < 100000].__len__()
+        rule13_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 1000 and self.now_format_stock_dict[code]['volume'] < 100000 and self.now_format_stock_dict[code]['zdf']>0].__len__()
+        rule13_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 1000 and self.now_format_stock_dict[code]['volume'] < 100000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule13_up_avg = rule13_up_sum/rule13_up
+        rule13_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 1000 and self.now_format_stock_dict[code]['volume'] < 100000 and self.now_format_stock_dict[code]['zdf']<0].__len__()
+        rule13_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] > 1000 and self.now_format_stock_dict[code]['volume'] < 100000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule13_down_avg = rule13_down_sum/rule13_down
+        print('[+] 命中 "\033[1;31m市值大于1000亿\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule13_num,rule13_up,rule13_up_avg,rule13_down,rule13_down_avg))
+
+        rule14_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] < 150].__len__()
+        rule14_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] < 150 and self.now_format_stock_dict[code]['zdf']>0].__len__()
+        rule14_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] < 150 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule14_up_avg = rule14_up_sum/rule14_up
+        rule14_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] < 150 and self.now_format_stock_dict[code]['zdf']<0].__len__()
+        rule14_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['volume'] < 150 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule14_down_avg = rule14_down_sum/rule14_down
+        print('[+] 命中 "\033[1;31m市值小于150亿\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule14_num,rule14_up,rule14_up_avg,rule14_down,rule14_down_avg))
+
+        """
+          - 60日涨幅>0%<10涨跌情况
+          - 60日涨幅>10%<30涨跌情况
+          - 60日涨幅>30%<50涨跌情况
+          - 60日涨幅>50%涨跌情况
+
+          - 60日涨幅<0, >-10%涨跌情况
+          - 60日涨幅<-10, >-30%涨跌情况
+          - 60日涨幅<-30, >-50%涨跌情况
+
+          - 5日涨幅>0<10%涨跌情况
+          - 5日涨幅>10%<20涨跌情况
+          - 5日涨幅>20%涨跌情况
+
+          - 5日涨幅小于0，大于-10的涨跌情况
+          - 5日涨幅小于-10，大于-20的涨跌情况
+
+        """
+        rule21_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 0 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10 ].__len__()
+        rule21_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 0 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule21_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 0 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule21_up_avg = rule21_up_sum/rule21_up
+        rule21_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 0 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule21_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 0 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule21_down_avg = rule21_down_sum/rule21_down
+
+        rule22_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 10 and self.now_format_stock_dict[code]['yk60r_zdf'] < 30 ].__len__()
+        rule22_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 10 and self.now_format_stock_dict[code]['yk60r_zdf'] < 30 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule22_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 10 and self.now_format_stock_dict[code]['yk60r_zdf'] < 30 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule22_up_avg = rule22_up_sum/rule22_up
+        rule22_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 10 and self.now_format_stock_dict[code]['yk60r_zdf'] < 30 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule22_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 10 and self.now_format_stock_dict[code]['yk60r_zdf'] < 30 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule22_down_avg = rule22_down_sum/rule22_down
+
+        rule23_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 30 and self.now_format_stock_dict[code]['yk60r_zdf'] < 50 ].__len__()
+        rule23_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 30 and self.now_format_stock_dict[code]['yk60r_zdf'] < 50 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule23_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 30 and self.now_format_stock_dict[code]['yk60r_zdf'] < 50 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule23_up_avg = rule23_up_sum/rule23_up
+        rule23_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 30 and self.now_format_stock_dict[code]['yk60r_zdf'] < 50 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule23_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 30 and self.now_format_stock_dict[code]['yk60r_zdf'] < 50 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule23_down_avg = rule23_down_sum/rule23_down
+
+        rule24_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 50 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10000 ].__len__()
+        rule24_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 50 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule24_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 50 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule24_up_avg = rule24_up_sum/rule24_up
+        rule24_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 50 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule24_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] > 50 and self.now_format_stock_dict[code]['yk60r_zdf'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule24_down_avg = rule24_down_sum/rule24_down
+
+        rule25_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < 0 and self.now_format_stock_dict[code]['yk60r_zdf'] > -10 ].__len__()
+        rule25_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < 0 and self.now_format_stock_dict[code]['yk60r_zdf'] > -10 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule25_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < 0 and self.now_format_stock_dict[code]['yk60r_zdf'] > -10 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule25_up_avg = rule25_up_sum/rule25_up
+        rule25_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < 0 and self.now_format_stock_dict[code]['yk60r_zdf'] > -10 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule25_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < 0 and self.now_format_stock_dict[code]['yk60r_zdf'] > -10 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule25_down_avg = rule25_down_sum/rule25_down
+
+        rule26_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -10 and self.now_format_stock_dict[code]['yk60r_zdf'] > -30 ].__len__()
+        rule26_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -10 and self.now_format_stock_dict[code]['yk60r_zdf'] > -30 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule26_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -10 and self.now_format_stock_dict[code]['yk60r_zdf'] > -30 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule26_up_avg = rule26_up_sum/rule26_up
+        rule26_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -10 and self.now_format_stock_dict[code]['yk60r_zdf'] > -30 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule26_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -10 and self.now_format_stock_dict[code]['yk60r_zdf'] > -30 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule26_down_avg = rule26_down_sum/rule26_down
+
+        rule27_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -30 and self.now_format_stock_dict[code]['yk60r_zdf'] > -50 ].__len__()
+        rule27_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -30 and self.now_format_stock_dict[code]['yk60r_zdf'] > -50 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule27_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -30 and self.now_format_stock_dict[code]['yk60r_zdf'] > -50 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule27_up_avg = rule27_up_sum/rule27_up
+        rule27_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -30 and self.now_format_stock_dict[code]['yk60r_zdf'] > -50 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule27_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['yk60r_zdf'] < -30 and self.now_format_stock_dict[code]['yk60r_zdf'] > -50 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule27_down_avg = rule27_down_sum/rule27_down
+
+        rule28_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 0 and self.now_format_stock_dict[code]['zdf_5d'] < 10 ].__len__()
+        rule28_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 0 and self.now_format_stock_dict[code]['zdf_5d'] < 10 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule28_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 0 and self.now_format_stock_dict[code]['zdf_5d'] < 10 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule28_up_avg = rule28_up_sum/rule28_up
+        rule28_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 0 and self.now_format_stock_dict[code]['zdf_5d'] < 10 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule28_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 0 and self.now_format_stock_dict[code]['zdf_5d'] < 10 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule28_down_avg = rule28_down_sum/rule28_down
+
+        rule29_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 10 and self.now_format_stock_dict[code]['zdf_5d'] < 20 ].__len__()
+        rule29_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 10 and self.now_format_stock_dict[code]['zdf_5d'] < 20 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule29_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 10 and self.now_format_stock_dict[code]['zdf_5d'] < 20 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule29_up_avg = rule29_up_sum/rule29_up
+        rule29_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 10 and self.now_format_stock_dict[code]['zdf_5d'] < 20 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule29_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 10 and self.now_format_stock_dict[code]['zdf_5d'] < 20 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule29_down_avg = rule29_down_sum/rule29_down
+
+        rule30_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 20 and self.now_format_stock_dict[code]['zdf_5d'] < 10000 ].__len__()
+        rule30_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 20 and self.now_format_stock_dict[code]['zdf_5d'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule30_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 20 and self.now_format_stock_dict[code]['zdf_5d'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule30_up_avg = rule30_up_sum/rule30_up
+        rule30_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 20 and self.now_format_stock_dict[code]['zdf_5d'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule30_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 20 and self.now_format_stock_dict[code]['zdf_5d'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule30_down_avg = rule30_down_sum/rule30_down
+
+        rule31_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < 0 and self.now_format_stock_dict[code]['zdf_5d'] > -10 ].__len__()
+        rule31_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < 0 and self.now_format_stock_dict[code]['zdf_5d'] > -10 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule31_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < 0 and self.now_format_stock_dict[code]['zdf_5d'] > -10 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule31_up_avg = rule31_up_sum/rule31_up
+        rule31_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < 0 and self.now_format_stock_dict[code]['zdf_5d'] > -10 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule31_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < 0 and self.now_format_stock_dict[code]['zdf_5d'] > -10 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule31_down_avg = rule31_down_sum/rule31_down
+
+        rule32_num = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < -10 and self.now_format_stock_dict[code]['zdf_5d'] > -20 ].__len__()
+        rule32_up = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < -10 and self.now_format_stock_dict[code]['zdf_5d'] > -20 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule32_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < -10 and self.now_format_stock_dict[code]['zdf_5d'] > -20 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule32_up_avg = rule32_up_sum/rule32_up
+        rule32_down = [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < -10 and self.now_format_stock_dict[code]['zdf_5d'] > -20 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule32_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] < -10 and self.now_format_stock_dict[code]['zdf_5d'] > -20 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule32_down_avg = rule32_down_sum/rule32_down
+        print('[+] 命中 "\033[1;31m60日涨幅>0%%<10%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule21_num,rule21_up,rule21_up_avg,rule21_down,rule21_down_avg))
+        print('[+] 命中 "\033[1;31m60日涨幅>10%%<30%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule22_num,rule22_up,rule22_up_avg,rule22_down,rule22_down_avg))
+        print('[+] 命中 "\033[1;31m60日涨幅>30%%<50%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule23_num,rule23_up,rule23_up_avg,rule23_down,rule23_down_avg))
+        print('[+] 命中 "\033[1;31m60日涨幅>50%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule24_num,rule24_up,rule24_up_avg,rule24_down,rule24_down_avg))
+        print('[+] 命中 "\033[1;31m60日涨幅<0%% >-10%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule25_num,rule25_up,rule25_up_avg,rule25_down,rule25_down_avg))
+        print('[+] 命中 "\033[1;31m60日涨幅<-10%% >-30%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule26_num,rule26_up,rule26_up_avg,rule26_down,rule26_down_avg))
+        print('[+] 命中 "\033[1;31m60日涨幅<-30%% >-50%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule27_num,rule27_up,rule27_up_avg,rule27_down,rule27_down_avg))
+        print('[+] 命中 "\033[1;31m5日涨幅>0<10%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule28_num,rule28_up,rule28_up_avg,rule28_down,rule28_down_avg))
+        print('[+] 命中 "\033[1;31m5日涨幅>10%%<20%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule29_num,rule29_up,rule29_up_avg,rule29_down,rule29_down_avg))
+        print('[+] 命中 "\033[1;31m5日涨幅>20%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule30_num,rule30_up,rule30_up_avg,rule30_down,rule30_down_avg))
+        print('[+] 命中 "\033[1;31m5日涨幅小于0%%，大于-10%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule31_num,rule31_up,rule31_up_avg,rule31_down,rule31_down_avg))
+        print('[+] 命中 "\033[1;31m5日涨幅小于-10%%，大于-20%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule32_num,rule32_up,rule32_up_avg,rule32_down,rule32_down_avg))
+
+
+        """
+          - 昨日涨幅大于0小于5的股票，今日涨跌情况统计
+          - 昨日涨幅大于5的股票，今日涨跌情况统计
+          - 昨日涨幅小于0大于-5的股票，今日涨跌情况统计
+          - 昨日涨幅小于-5的股票，今日涨跌情况统计
+        """
+        rule33_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5 ].__len__()
+        rule33_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule33_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule33_up_avg = rule33_up_sum/rule33_up
+        rule33_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule33_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule33_down_avg = rule33_down_sum/rule33_down
+
+        rule34_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5000 ].__len__()
+        rule34_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5000 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule34_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule34_up_avg = rule34_up_sum/rule34_up
+        rule34_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5000 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule34_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) > 5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) < 5000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule34_down_avg = rule34_down_sum/rule34_down
+
+        rule35_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -5 ].__len__()
+        rule35_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -5 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule35_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -5 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule35_up_avg = rule35_up_sum/rule35_up
+        rule35_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -5 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule35_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < 0 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -5 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule35_down_avg = rule35_down_sum/rule35_down
+
+        rule36_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < -5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -100 ].__len__()
+        rule36_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < -5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -100 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule36_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < -5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -100 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule36_up_avg = rule36_up_sum/rule36_up
+        rule36_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < -5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -100 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule36_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_zdf']) < -5 and float(self.now_format_stock_dict[code]['yestoday_zdf']) > -100 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule36_down_avg = rule36_down_sum/rule36_down
+        print('[+] 命中 "\033[1;31m昨日涨幅大于0小于5\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule33_num,rule33_up,rule33_up_avg,rule33_down,rule33_down_avg))
+        print('[+] 命中 "\033[1;31m昨日涨幅大于5\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule34_num,rule34_up,rule34_up_avg,rule34_down,rule34_down_avg))
+        print('[+] 命中 "\033[1;31m昨日涨幅小于0大于-5\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule35_num,rule35_up,rule35_up_avg,rule35_down,rule35_down_avg))
+        print('[+] 命中 "\033[1;31m昨日涨幅小于-5\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule36_num,rule36_up,rule36_up_avg,rule36_down,rule36_down_avg))
+
+        """
+          - 昨日净流入>0 < 500w的股票, 今日涨跌分布
+          - 昨日净流入>500w今日涨跌分布
+          - 昨日净流入<0w今日涨跌分布
+
+          - 近五日净流入>0 < 1500w的股票, 今日涨跌分布
+          - 近五日净流入>1500w的股票, 今日涨跌分布
+          - 近五日净流入<0w的股票, 今日涨跌分布
+        """
+        rule37_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 0 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500 ].__len__()
+        rule37_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 0 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule37_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 0 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule37_up_avg = rule37_up_sum/rule37_up
+        rule37_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 0 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule37_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 0 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule37_down_avg = rule37_down_sum/rule37_down
+
+        rule38_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 500 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500000 ].__len__()
+        rule38_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 500 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule38_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 500 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule38_up_avg = rule38_up_sum/rule38_up
+        rule38_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 500 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule38_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) > 500 and float(self.now_format_stock_dict[code]['yestoday_jlr']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule38_down_avg = rule38_down_sum/rule38_down
+
+        rule39_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) < 0 ].__len__()
+        rule39_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) < 0 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule39_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) < 0 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule39_up_avg = rule39_up_sum/rule39_up
+        rule39_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) < 0 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule39_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['yestoday_jlr']) < 0 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule39_down_avg = rule39_down_sum/rule39_down
+
+        rule40_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 0 and float(self.now_format_stock_dict[code]['jlr_5days']) < 1500 ].__len__()
+        rule40_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 0 and float(self.now_format_stock_dict[code]['jlr_5days']) < 1500 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule40_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 0 and float(self.now_format_stock_dict[code]['jlr_5days']) < 1500 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule40_up_avg = rule40_up_sum/rule40_up
+        rule40_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 0 and float(self.now_format_stock_dict[code]['jlr_5days']) < 1500 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule40_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 0 and float(self.now_format_stock_dict[code]['jlr_5days']) < 1500 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule40_down_avg = rule40_down_sum/rule40_down
+
+        rule41_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 1500 and float(self.now_format_stock_dict[code]['jlr_5days']) < 500000 ].__len__()
+        rule41_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 1500 and float(self.now_format_stock_dict[code]['jlr_5days']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule41_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 1500 and float(self.now_format_stock_dict[code]['jlr_5days']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule41_up_avg = rule41_up_sum/rule41_up
+        rule41_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 1500 and float(self.now_format_stock_dict[code]['jlr_5days']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule41_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) > 1500 and float(self.now_format_stock_dict[code]['jlr_5days']) < 500000 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule41_down_avg = rule41_down_sum/rule41_down
+
+        rule42_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) < 0 ].__len__()
+        rule42_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) < 0 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule42_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) < 0 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule42_up_avg = rule42_up_sum/rule42_up
+        rule42_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) < 0 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule42_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['jlr_5days']) < 0 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule42_down_avg = rule42_down_sum/rule42_down
+        print('[+] 命中 "\033[1;31m昨日净流入>0 < 500w\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule37_num,rule37_up,rule37_up_avg,rule37_down,rule37_down_avg))
+        print('[+] 命中 "\033[1;31m昨日净流入>500w\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule38_num,rule38_up,rule38_up_avg,rule38_down,rule38_down_avg))
+        print('[+] 命中 "\033[1;31m昨日净流入<0w\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule39_num,rule39_up,rule39_up_avg,rule39_down,rule39_down_avg))
+        print('[+] 命中 "\033[1;31m近五日净流入>0 < 1500w\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule40_num,rule40_up,rule40_up_avg,rule40_down,rule40_down_avg))
+        print('[+] 命中 "\033[1;31m近五日净流入>1500w\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule41_num,rule41_up,rule41_up_avg,rule41_down,rule41_down_avg))
+        print('[+] 命中 "\033[1;31m近五日净流入<0w\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule42_num,rule42_up,rule42_up_avg,rule42_down,rule42_down_avg))
+
+        """
+          - 评分>85的，今日涨跌分布
+          - 评分<85的，今日涨跌分布
+
+          - 主力增仓的，今日涨跌分布1
+          - 主力减仓的，今日涨跌分布0
+          - 主力中立的，今日涨跌分布2
+
+          - 行业增仓的，今日涨跌分布
+          - 行业减仓的，今日涨跌分布
+
+          - 5日线上的, 今日涨跌幅分布
+          - 5日线下的, 今日涨跌幅分布
+
+        """
+
+        rule43_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 ].__len__()
+        rule43_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule43_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        try:
+            rule43_up_avg = rule43_up_sum/rule43_up
+        except:
+            rule43_up_avg = 0
+        rule43_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule43_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) > 85 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule43_down_avg = rule43_down_sum/rule43_down
+
+        rule44_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 ].__len__()
+        rule44_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule44_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule44_up_avg = rule44_up_sum/rule44_up
+        rule44_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule44_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['score']) < 85 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule44_down_avg = rule44_down_sum/rule44_down
+
+        rule45_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 1 ].__len__()
+        rule45_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule45_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule45_up_avg = rule45_up_sum/rule45_up
+        rule45_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule45_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule45_down_avg = rule45_down_sum/rule45_down
+
+        rule46_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 0 ].__len__()
+        rule46_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule46_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule46_up_avg = rule46_up_sum/rule46_up
+        rule46_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule46_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule46_down_avg = rule46_down_sum/rule46_down
+
+        rule47_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 2 ].__len__()
+        rule47_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 2 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule47_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 2 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule47_up_avg = rule47_up_sum/rule47_up
+        rule47_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 2 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule47_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['zjdx1']) == 2 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule47_down_avg = rule47_down_sum/rule47_down
+
+        rule48_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 1 ].__len__()
+        rule48_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule48_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule48_up_avg = rule48_up_sum/rule48_up
+        rule48_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule48_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 1 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule48_down_avg = rule48_down_sum/rule48_down
+
+        rule49_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 0 ].__len__()
+        rule49_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule49_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule49_up_avg = rule49_up_sum/rule49_up
+        rule49_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule49_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['hydx1']) == 0 and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule49_down_avg = rule49_down_sum/rule49_down
+
+        rule50_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) >= float(self.now_format_stock_dict[code]['ma5']) ].__len__()
+        rule50_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) >= float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule50_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) >= float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule50_up_avg = rule50_up_sum/rule50_up
+        rule50_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) >= float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule50_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) >= float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule50_down_avg = rule50_down_sum/rule50_down
+
+        rule51_num = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) < float(self.now_format_stock_dict[code]['ma5']) ].__len__()
+        rule51_up = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) < float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])>0].__len__()
+        rule51_up_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) < float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])>0])
+        rule51_up_avg = rule51_up_sum/rule51_up
+        rule51_down = [ code for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) < float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])<0].__len__()
+        rule51_down_sum = sum([ self.now_format_stock_dict[code]['zdf'] for code in self.now_format_stock_dict if float(self.now_format_stock_dict[code]['trade']) < float(self.now_format_stock_dict[code]['ma5']) and float(self.now_format_stock_dict[code]['zdf'])<0])
+        rule51_down_avg = rule51_down_sum/rule51_down
+        print('[+] 命中 "\033[1;31m评分>85\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule43_num,rule43_up,rule43_up_avg,rule43_down,rule43_down_avg))
+        print('[+] 命中 "\033[1;31m评分<85\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule44_num,rule44_up,rule44_up_avg,rule44_down,rule44_down_avg))
+        print('[+] 命中 "\033[1;31m主力增仓\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule45_num,rule45_up,rule45_up_avg,rule45_down,rule45_down_avg))
+        print('[+] 命中 "\033[1;31m主力减仓\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule46_num,rule46_up,rule46_up_avg,rule46_down,rule46_down_avg))
+        print('[+] 命中 "\033[1;31m主力中立\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule47_num,rule47_up,rule47_up_avg,rule47_down,rule47_down_avg))
+        print('[+] 命中 "\033[1;31m行业增仓\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule48_num,rule48_up,rule48_up_avg,rule48_down,rule48_down_avg))
+        print('[+] 命中 "\033[1;31m行业减仓\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule49_num,rule49_up,rule49_up_avg,rule49_down,rule49_down_avg))
+        print('[+] 命中 "\033[1;31m5日线上\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule50_num,rule50_up,rule50_up_avg,rule50_down,rule50_down_avg))
+        print('[+] 命中 "\033[1;31m5日线下\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule51_num,rule51_up,rule51_up_avg,rule51_down,rule51_down_avg))
+
+    def market_data_analyse(self):
+        # 1. 加载个股分析数据集
+        self.get_all_code()
+        self.get_anaylse_data()
+        
+        # 2. 加载均线数据集
+        self.get_jx_data()
+
+        # 3. 获取当前实时股票行情指标
+        ntime = "\033[1;32m%s\033[0m" % str(time.strftime('%H:%M:%S' , time.localtime()))
+        fh = "\033[1;37m+\033[0m"
+        print("[%s][%s] 获取实时股票数据中, 请稍后..." % (fh, ntime))
+        print("_"*150)
+        self.format_realtime_data()
+
+        # 4. 数据整合
+        for i in self.stock_jx_data:
+            code = i
+            if code in self.now_format_stock_dict.keys():
+                self.now_format_stock_dict[code]['jx_data'] = self.stock_jx_data[i]
+
+        # 5. 市场分析
+        ntime = "\033[1;32m%s\033[0m" % str(time.strftime('%H:%M:%S' , time.localtime()))
+        fh = "\033[1;37m+\033[0m"
+        print("[%s][%s] 市场数据分析中, 请稍后..." % (fh, ntime))
+        self.market_analyse()
+        print("_"*150)
+
     def main(self):
         if not os.path.exists("./config/settings.conf"):
             print("[-] settings.conf is not found, pls check it!")
@@ -2950,6 +3633,8 @@ class StockNet():
 
             parser.add_option("--format_all", action="store_true", dest="format_all", default=False, help=u"是否查看所有异动股票(包含下跌)")
 
+            parser.add_option("--market_data_analyse", action="store_true", dest="market_data_analyse", default=False, help=u"进行市场分析")
+
             (options, args) = parser.parse_args()
 
             if args:
@@ -2958,6 +3643,7 @@ class StockNet():
                 if datetime.datetime.now().weekday()+1 in [6, 7]:
                     return
 
+                # 查看当前股票情况
                 if options.format_result:
                     result_file = options.format_result
                     self.conditions_filter = options.conditions_filter
@@ -2974,9 +3660,15 @@ class StockNet():
 
                     self.format_result(result_file, parser)
 
+                #  增加自选股到东方财富
                 elif options.add2zx:
                     result_file = options.add2zx
                     self.add2zx(result_file)
+
+                # 市场数据分析
+                elif options.market_data_analyse:
+                    self.market_data_analyse()
+
                 else:
                     self.work(code=options.code)
 
