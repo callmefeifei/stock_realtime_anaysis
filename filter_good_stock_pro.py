@@ -3381,6 +3381,7 @@ class StockNet():
         print('[+] 命中 "\033[1;31m5日涨幅>0<10%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule28_num,rule28_up,rule28_up_avg,rule28_down,rule28_down_avg))
         print('[+] 命中 "\033[1;31m5日涨幅>10%%<20%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule29_num,rule29_up,rule29_up_avg,rule29_down,rule29_down_avg))
         print('[+] 命中 "\033[1;31m5日涨幅>20%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule30_num,rule30_up,rule30_up_avg,rule30_down,rule30_down_avg))
+        print [ code for code in self.now_format_stock_dict if self.now_format_stock_dict[code]['zdf_5d'] > 20 and self.now_format_stock_dict[code]['zdf_5d'] < 10000 and float(self.now_format_stock_dict[code]['zdf'])>0]
         print('[+] 命中 "\033[1;31m5日涨幅小于0%%，大于-10%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule31_num,rule31_up,rule31_up_avg,rule31_down,rule31_down_avg))
         print('[+] 命中 "\033[1;31m5日涨幅小于-10%%，大于-20%%\033[0m" 的股票 %s 支, 其中上涨 %s[%.2f%%] 支, 下跌 %s[%.2f%%] 支' % (rule32_num,rule32_up,rule32_up_avg,rule32_down,rule32_down_avg))
 
@@ -3648,6 +3649,7 @@ class StockNet():
                 parser.print_help()
             else:
                 if datetime.datetime.now().weekday()+1 in [6, 7]:
+                    print("[-]当前为非交易日, Exit!!")
                     return
 
                 # 查看当前股票情况
